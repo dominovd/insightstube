@@ -15,8 +15,10 @@ export interface TranscriptResult {
   segments: Segment[];
 }
 
-const UA =
+const WEB_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+const ANDROID_UA =
+  "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip";
 
 export function extractVideoId(input: string): string | null {
   const trimmed = input.trim();
@@ -47,48 +49,93 @@ function trackName(t: CaptionTrack): string {
   return t.name?.simpleText ?? t.name?.runs?.map((r) => r.text).join("") ?? t.languageCode;
 }
 
+/** Primary: InnerTube player API as the Android client — not affected by
+ *  the "sign in to confirm you're not a bot" check on datacenter IPs. */
+async function playerViaInnertube(videoId: string): Promise<any> {
+  const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "user-agent": ANDROID_UA,
+      "x-youtube-client-name": "3",
+      "x-youtube-client-version": "20.10.38",
+    },
+    body: JSON.stringify({
+      context: {
+        client: {
+          clientName: "ANDROID",
+          clientVersion: "20.10.38",
+          androidSdkVersion: 30,
+          hl: "en",
+          gl: "US",
+          utcOffsetMinutes: 0,
+        },
+      },
+      videoId,
+      contentCheckOk: true,
+      racyCheckOk: true,
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`InnerTube returned ${res.status}`);
+  return res.json();
+}
+
+/** Fallback: scrape ytInitialPlayerResponse from the watch page. */
+async function playerViaWatchPage(videoId: string): Promise<any> {
+  const res = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, {
+    headers: { "user-agent": WEB_UA, "accept-language": "en-US,en;q=0.9" },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`YouTube returned ${res.status}`);
+  const html = await res.text();
+  const m = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;(?:\s*var\s|\s*<\/script>)/s);
+  if (!m) throw new Error("Could not read video data.");
+  return JSON.parse(m[1]);
+}
+
+function extractTracks(player: any): CaptionTrack[] {
+  return player?.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+}
+
+function playable(player: any): boolean {
+  const status = player?.playabilityStatus?.status;
+  return !status || status === "OK";
+}
+
 export async function fetchTranscript(
   videoId: string,
   preferredLang?: string
 ): Promise<TranscriptResult> {
-  let watchRes: Response;
-  try {
-    watchRes = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, {
-      headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9" },
-      cache: "no-store",
-    });
-  } catch {
-    throw new Error("Could not reach YouTube. Please try again in a moment.");
-  }
-  if (!watchRes.ok) throw new Error(`YouTube returned ${watchRes.status}`);
-  const html = await watchRes.text();
+  let player: any = null;
+  let lastError = "";
 
-  const prMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;(?:\s*var\s|\s*<\/script>)/s);
-  if (!prMatch) throw new Error("Could not read video data. The video may be private or unavailable.");
-
-  let player: any;
-  try {
-    player = JSON.parse(prMatch[1]);
-  } catch {
-    throw new Error("Could not parse video data.");
+  // Try InnerTube (Android) first, then the watch page.
+  for (const attempt of [playerViaInnertube, playerViaWatchPage]) {
+    try {
+      const p = await attempt(videoId);
+      if (playable(p) && extractTracks(p).length) {
+        player = p;
+        break;
+      }
+      lastError =
+        p?.playabilityStatus?.reason ||
+        (playable(p) ? "This video has no captions." : "This video is unavailable.");
+      if (playable(p) && !player) player = player ?? p; // keep details for error msg
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : "Could not reach YouTube.";
+    }
   }
 
-  const status = player?.playabilityStatus?.status;
-  if (status && status !== "OK") {
+  if (!player || !extractTracks(player).length) {
     throw new Error(
-      player?.playabilityStatus?.reason || "This video is unavailable."
+      lastError ||
+        "This video has no captions — the creator disabled them and YouTube has no auto-captions."
     );
   }
 
-  const details = player?.videoDetails ?? {};
-  const tracks: CaptionTrack[] =
-    player?.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
-
-  if (!tracks.length) {
-    throw new Error(
-      "This video has no captions — the creator disabled them and YouTube has no auto-captions."
-    );
-  }
+  const details = player.videoDetails ?? {};
+  const tracks = extractTracks(player);
 
   // pick track: preferred → manual en → any en → first manual → first
   const pick =
@@ -98,10 +145,21 @@ export async function fetchTranscript(
     tracks.find((t) => t.kind !== "asr") ||
     tracks[0];
 
-  const capUrl = pick.baseUrl.includes("fmt=") ? pick.baseUrl : pick.baseUrl + "&fmt=json3";
-  const capRes = await fetch(capUrl, { headers: { "user-agent": UA }, cache: "no-store" });
-  if (!capRes.ok) throw new Error("Could not download the caption track.");
-  const cap = await capRes.json();
+  const capUrl =
+    (pick.baseUrl.includes("fmt=") ? pick.baseUrl : pick.baseUrl + "&fmt=json3") +
+    "&xorb=2&xobt=3&xovt=3"; // harmless params some clients send
+
+  let cap: any;
+  try {
+    const capRes = await fetch(capUrl, {
+      headers: { "user-agent": ANDROID_UA },
+      cache: "no-store",
+    });
+    if (!capRes.ok) throw new Error(`captions ${capRes.status}`);
+    cap = await capRes.json();
+  } catch {
+    throw new Error("Could not download the caption track. Please try again.");
+  }
 
   const segments: Segment[] = (cap.events ?? [])
     .filter((e: any) => e.segs && e.segs.some((s: any) => (s.utf8 ?? "").trim()))
