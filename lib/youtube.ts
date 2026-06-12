@@ -103,37 +103,57 @@ function playable(player: any): boolean {
   return !status || status === "OK";
 }
 
+/** Recursively find the first object containing the given key. */
+function deepFind(obj: any, key: string): any {
+  if (!obj || typeof obj !== "object") return undefined;
+  if (key in obj) return obj[key];
+  for (const v of Object.values(obj)) {
+    const found = deepFind(v, key);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
 /** Most datacenter-reliable: the engagement-panel transcript endpoint that
- *  youtube.com itself uses for the "Show transcript" button. */
+ *  youtube.com itself uses for the "Show transcript" button. The params are
+ *  taken from the `next` response instead of hand-crafting protobuf. */
 async function fetchViaGetTranscript(videoId: string): Promise<TranscriptResult> {
-  // params = url-safe base64 protobuf: field 1 (string) = videoId
-  const bytes = [0x0a, videoId.length, ...Array.from(videoId).map((c) => c.charCodeAt(0))];
-  const params = Buffer.from(Uint8Array.from(bytes))
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  const context = {
+    client: { clientName: "WEB", clientVersion: "2.20250606.01.00", hl: "en", gl: "US" },
+  };
+  const headers = {
+    "content-type": "application/json",
+    "user-agent": WEB_UA,
+    origin: "https://www.youtube.com",
+    referer: `https://www.youtube.com/watch?v=${videoId}`,
+  };
+
+  const nextRes = await fetch("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ context, videoId }),
+    cache: "no-store",
+  });
+  if (!nextRes.ok) throw new Error(`next returned ${nextRes.status}`);
+  const nextData = await nextRes.json();
+
+  const transcriptEndpoint = deepFind(nextData, "getTranscriptEndpoint");
+  const params = transcriptEndpoint?.params;
+  if (!params) throw new Error("No transcript panel for this video.");
 
   const res = await fetch(
     "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
     {
       method: "POST",
-      headers: { "content-type": "application/json", "user-agent": WEB_UA },
-      body: JSON.stringify({
-        context: {
-          client: { clientName: "WEB", clientVersion: "2.20250610.01.00", hl: "en", gl: "US" },
-        },
-        params,
-      }),
+      headers,
+      body: JSON.stringify({ context, params }),
       cache: "no-store",
     }
   );
   if (!res.ok) throw new Error(`get_transcript returned ${res.status}`);
   const data = await res.json();
 
-  const initialSegments =
-    data?.actions?.[0]?.updateEngagementPanelAction?.content?.transcriptRenderer?.content
-      ?.transcriptSearchPanelRenderer?.body?.transcriptSegmentListRenderer?.initialSegments ?? [];
+  const initialSegments = deepFind(data, "initialSegments") ?? [];
 
   const segments: Segment[] = initialSegments
     .map((s: any) => s.transcriptSegmentRenderer)
@@ -187,24 +207,30 @@ async function fetchViaGetTranscript(videoId: string): Promise<TranscriptResult>
 
 export async function fetchTranscript(
   videoId: string,
-  preferredLang?: string
+  preferredLang?: string,
+  debug = false
 ): Promise<TranscriptResult> {
   let player: any = null;
-  let lastError = "";
+  const errors: string[] = [];
 
   // Try InnerTube (Android) first, then the watch page.
-  for (const attempt of [playerViaInnertube, playerViaWatchPage]) {
+  for (const [name, attempt] of [
+    ["android", playerViaInnertube],
+    ["watch", playerViaWatchPage],
+  ] as const) {
     try {
       const p = await attempt(videoId);
       if (playable(p) && extractTracks(p).length) {
         player = p;
         break;
       }
-      lastError =
-        p?.playabilityStatus?.reason ||
-        (playable(p) ? "This video has no captions." : "This video is unavailable.");
+      errors.push(
+        `${name}: ` +
+          (p?.playabilityStatus?.reason ||
+            (playable(p) ? "no captions in response" : "video unavailable"))
+      );
     } catch (e) {
-      lastError = e instanceof Error ? e.message : "Could not reach YouTube.";
+      errors.push(`${name}: ${e instanceof Error ? e.message : "fetch failed"}`);
     }
   }
 
@@ -212,10 +238,12 @@ export async function fetchTranscript(
     // Final fallback: the endpoint youtube.com itself uses for "Show transcript".
     try {
       return await fetchViaGetTranscript(videoId);
-    } catch {
+    } catch (e) {
+      errors.push(`panel: ${e instanceof Error ? e.message : "failed"}`);
       throw new Error(
-        lastError ||
-          "This video has no captions — the creator disabled them and YouTube has no auto-captions."
+        debug
+          ? errors.join(" | ")
+          : "Couldn't fetch the transcript for this video. It may have no captions, or YouTube is temporarily blocking requests — please try again."
       );
     }
   }

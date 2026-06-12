@@ -5,7 +5,7 @@ import { clientIp, rateLimit } from "@/lib/ratelimit";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-async function handle(req: NextRequest, url: string, lang?: string) {
+async function handle(req: NextRequest, url: string, lang?: string, debug = false) {
   const limit = rateLimit(`tr:${clientIp(req)}`, { perMinute: 3, perDay: 5 });
   if (!limit.ok) {
     return NextResponse.json({ error: limit.reason }, { status: 429 });
@@ -20,7 +20,7 @@ async function handle(req: NextRequest, url: string, lang?: string) {
   }
 
   try {
-    const result = await fetchTranscript(videoId, lang);
+    const result = await fetchTranscript(videoId, lang, debug);
     return NextResponse.json(result);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Something went wrong.";
@@ -38,8 +38,13 @@ export async function POST(req: NextRequest) {
   return handle(req, body.url ?? "", body.lang);
 }
 
-// GET variant for quick testing: /api/transcript?url=...
+// GET variant for quick testing: /api/transcript?url=...&debug=1
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url") ?? "";
-  return handle(req, url, req.nextUrl.searchParams.get("lang") ?? undefined);
+  return handle(
+    req,
+    url,
+    req.nextUrl.searchParams.get("lang") ?? undefined,
+    req.nextUrl.searchParams.get("debug") === "1"
+  );
 }
