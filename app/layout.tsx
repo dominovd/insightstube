@@ -4,9 +4,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://insightstube.com"),
-  title: "InsightsTube: YouTube Transcript Generator & AI Video Summarizer",
+  title: "Free YouTube Transcript Generator with AI Insights | InsightsTube",
   description:
-    "Turn any YouTube video into text. Get the full transcript with timestamps, download subtitles as TXT, SRT or VTT, and read a one-click AI summary. Free, no signup.",
+    "Get a free YouTube transcript with timestamps, then turn the video into AI insights, summaries and key takeaways. Copy text or download TXT, SRT and VTT. No signup needed.",
   keywords: [
     "youtube transcript",
     "youtube to text",
@@ -17,12 +17,18 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "InsightsTube: Turn any YouTube video into text & insights",
+    title: "Free YouTube Transcript Generator with AI Insights",
     description:
-      "Full transcripts with timestamps, subtitle downloads and AI summaries for any YouTube video. Free, no signup.",
+      "Paste a YouTube link to get a clean transcript with timestamps, then turn the video into AI summaries, key takeaways and insights.",
     url: "https://insightstube.com",
     siteName: "InsightsTube",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Free YouTube Transcript Generator with AI Insights",
+    description:
+      "Get YouTube transcripts with timestamps for free, then turn videos into summaries, key takeaways and AI insights.",
   },
   robots: { index: true, follow: true },
   verification: { google: "DZu-RDa_U5KGH118lVuU_kgEBVrgMT1hvdN249St-qw" },

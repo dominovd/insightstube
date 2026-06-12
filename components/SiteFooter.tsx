@@ -16,8 +16,8 @@ export default function SiteFooter() {
               </span>
             </Link>
             <p style={{ maxWidth: 260 }}>
-              Turn any YouTube video into text, summaries and insights. Free tools for
-              people who learn from video.
+              InsightsTube turns YouTube videos into transcripts, subtitles, summaries
+              and AI insights. Free tools for people who learn from video.
             </p>
           </div>
           <div>

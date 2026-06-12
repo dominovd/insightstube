@@ -176,7 +176,7 @@ export default function TranscriptTool() {
               <IconLoader size={17} /> Fetching…
             </>
           ) : (
-            <>Get transcript →</>
+            <>Get transcript &amp; insights →</>
           )}
         </button>
       </form>
