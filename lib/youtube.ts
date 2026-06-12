@@ -103,6 +103,88 @@ function playable(player: any): boolean {
   return !status || status === "OK";
 }
 
+/** Most datacenter-reliable: the engagement-panel transcript endpoint that
+ *  youtube.com itself uses for the "Show transcript" button. */
+async function fetchViaGetTranscript(videoId: string): Promise<TranscriptResult> {
+  // params = url-safe base64 protobuf: field 1 (string) = videoId
+  const bytes = [0x0a, videoId.length, ...Array.from(videoId).map((c) => c.charCodeAt(0))];
+  const params = Buffer.from(Uint8Array.from(bytes))
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const res = await fetch(
+    "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", "user-agent": WEB_UA },
+      body: JSON.stringify({
+        context: {
+          client: { clientName: "WEB", clientVersion: "2.20250610.01.00", hl: "en", gl: "US" },
+        },
+        params,
+      }),
+      cache: "no-store",
+    }
+  );
+  if (!res.ok) throw new Error(`get_transcript returned ${res.status}`);
+  const data = await res.json();
+
+  const initialSegments =
+    data?.actions?.[0]?.updateEngagementPanelAction?.content?.transcriptRenderer?.content
+      ?.transcriptSearchPanelRenderer?.body?.transcriptSegmentListRenderer?.initialSegments ?? [];
+
+  const segments: Segment[] = initialSegments
+    .map((s: any) => s.transcriptSegmentRenderer)
+    .filter(Boolean)
+    .map((r: any) => {
+      const start = Number(r.startMs ?? 0) / 1000;
+      const end = Number(r.endMs ?? 0) / 1000;
+      return {
+        start: Math.round(start * 100) / 100,
+        dur: Math.round(Math.max(end - start, 0) * 100) / 100,
+        text: (r.snippet?.runs ?? [])
+          .map((x: any) => x.text ?? "")
+          .join("")
+          .replace(/\s+/g, " ")
+          .trim(),
+      };
+    })
+    .filter((s: Segment) => s.text);
+
+  if (!segments.length) throw new Error("No transcript segments returned.");
+
+  // Title/author via oEmbed (lightweight, rarely bot-checked)
+  let title = "YouTube video";
+  let author = "";
+  try {
+    const oe = await fetch(
+      `https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D${videoId}&format=json`,
+      { headers: { "user-agent": WEB_UA }, cache: "no-store" }
+    );
+    if (oe.ok) {
+      const j = await oe.json();
+      title = j.title ?? title;
+      author = j.author_name ?? "";
+    }
+  } catch {
+    /* non-fatal */
+  }
+
+  const last = segments[segments.length - 1];
+  return {
+    videoId,
+    title,
+    author,
+    lengthSeconds: Math.round(last.start + last.dur),
+    lang: "default",
+    langName: "Default",
+    availableLangs: [],
+    segments,
+  };
+}
+
 export async function fetchTranscript(
   videoId: string,
   preferredLang?: string
@@ -121,17 +203,21 @@ export async function fetchTranscript(
       lastError =
         p?.playabilityStatus?.reason ||
         (playable(p) ? "This video has no captions." : "This video is unavailable.");
-      if (playable(p) && !player) player = player ?? p; // keep details for error msg
     } catch (e) {
       lastError = e instanceof Error ? e.message : "Could not reach YouTube.";
     }
   }
 
   if (!player || !extractTracks(player).length) {
-    throw new Error(
-      lastError ||
-        "This video has no captions — the creator disabled them and YouTube has no auto-captions."
-    );
+    // Final fallback: the endpoint youtube.com itself uses for "Show transcript".
+    try {
+      return await fetchViaGetTranscript(videoId);
+    } catch {
+      throw new Error(
+        lastError ||
+          "This video has no captions — the creator disabled them and YouTube has no auto-captions."
+      );
+    }
   }
 
   const details = player.videoDetails ?? {};
