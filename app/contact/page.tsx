@@ -3,7 +3,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "Contact — InsightsTube",
+  title: "Contact | InsightsTube",
   description: "Get in touch with the InsightsTube team.",
   alternates: { canonical: "/contact" },
 };
@@ -33,11 +33,11 @@ export default function Contact() {
         <ul>
           <li>
             <b>A video has no transcript?</b> If the creator disabled captions and
-            YouTube has no auto-captions, there is no caption track for us to read —
+            YouTube has no auto-captions, there is no caption track for us to read,
             no tool can fetch what doesn&apos;t exist.
           </li>
           <li>
-            <b>Found a bug?</b> Include the video URL and what you expected to happen —
+            <b>Found a bug?</b> Include the video URL and what you expected to happen,
             that makes fixes much faster.
           </li>
           <li>

@@ -36,7 +36,7 @@ export function rateLimit(
   if (now > b.day.resetAt) b.day = { count: 0, resetAt: now + 86_400_000 };
 
   if (b.minute.count >= perMinute) {
-    return { ok: false, reason: "Too many requests — wait a minute and try again." };
+    return { ok: false, reason: "Too many requests. Wait a minute and try again." };
   }
   if (b.day.count >= perDay) {
     return { ok: false, reason: "Daily limit reached. Come back tomorrow!" };

@@ -3,7 +3,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "About — InsightsTube",
+  title: "About | InsightsTube",
   description:
     "What InsightsTube is, why we built it, and how our free YouTube transcript and AI summary tools work.",
   alternates: { canonical: "/about" },
@@ -24,7 +24,7 @@ export default function About() {
         </p>
         <p>
           We built it for a simple reason: more and more knowledge lives inside
-          long-form video — lectures, podcasts, interviews, tutorials — but video is a
+          long-form video: lectures, podcasts, interviews, tutorials. But video is a
           terrible format for finding one quote, citing a source, or deciding whether
           a two-hour episode is worth your time. Text solves all of that.
         </p>
@@ -32,7 +32,7 @@ export default function About() {
         <h2>How it works</h2>
         <p>
           When you paste a link, we read the caption track that YouTube already
-          publishes for that video — either the creator&apos;s own subtitles or
+          publishes for that video, either the creator&apos;s own subtitles or
           YouTube&apos;s automatic captions. We never download, copy or store the
           video or audio itself. AI summaries are generated on demand from the
           transcript text using Anthropic&apos;s Claude model.
@@ -42,7 +42,7 @@ export default function About() {
         <ul>
           <li>Useful single-purpose tools should be free and work without an account.</li>
           <li>Your data is not the product: we don&apos;t build profiles or sell data.</li>
-          <li>Creators own their content — we only work with the public caption text.</li>
+          <li>Creators own their content, so we only work with the public caption text.</li>
         </ul>
 
         <h2>Who is behind this</h2>

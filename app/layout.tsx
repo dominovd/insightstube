@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://insightstube.com"),
-  title: "InsightsTube — YouTube Transcript Generator & AI Video Summarizer",
+  title: "InsightsTube: YouTube Transcript Generator & AI Video Summarizer",
   description:
     "Turn any YouTube video into text. Get the full transcript with timestamps, download subtitles as TXT, SRT or VTT, and read a one-click AI summary. Free, no signup.",
   keywords: [
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "InsightsTube — Turn any YouTube video into text & insights",
+    title: "InsightsTube: Turn any YouTube video into text & insights",
     description:
       "Full transcripts with timestamps, subtitle downloads and AI summaries for any YouTube video. Free, no signup.",
     url: "https://insightstube.com",

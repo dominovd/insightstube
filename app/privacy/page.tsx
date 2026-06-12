@@ -3,7 +3,7 @@ import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — InsightsTube",
+  title: "Privacy Policy | InsightsTube",
   description: "How InsightsTube handles your data: what we collect, what we don't, and why.",
   alternates: { canonical: "/privacy" },
 };

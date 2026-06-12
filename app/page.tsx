@@ -59,7 +59,7 @@ export default function Home() {
             into <span className="grad">text &amp; insights</span>
           </h1>
           <p className="sub">
-            Paste a link — get the full transcript, an AI summary, key takeaways and
+            Paste a link and get the full transcript, an AI summary, key takeaways and
             subtitle files. Stop scrubbing through videos to find one quote.
           </p>
 
@@ -95,7 +95,7 @@ export default function Home() {
               <div className="num">1</div>
               <h3>Paste a YouTube link</h3>
               <p>
-                Any public video with captions — lectures, podcasts, tutorials,
+                Any public video with captions: lectures, podcasts, tutorials,
                 interviews. No account needed.
               </p>
             </div>
@@ -215,7 +215,7 @@ export default function Home() {
               </div>
               <div className="guide-body">
                 <div className="guide-tag">Transcripts</div>
-                <h3>How to Get the Transcript of Any YouTube Video — 3 Ways</h3>
+                <h3>How to Get the Transcript of Any YouTube Video (3 Ways)</h3>
                 <p>Built-in transcripts, our one-click tool, and what to do when captions are disabled.</p>
               </div>
             </a>
@@ -226,7 +226,7 @@ export default function Home() {
               <div className="guide-body">
                 <div className="guide-tag">YouTube TV</div>
                 <h3>YouTube TV Not Working? Every Fix That Actually Helps</h3>
-                <p>Buffering, login loops and error codes — a complete troubleshooting checklist.</p>
+                <p>Buffering, login loops and error codes, a complete troubleshooting checklist.</p>
               </div>
             </a>
             <a className="guide-card" href="#">
@@ -236,7 +236,7 @@ export default function Home() {
               <div className="guide-body">
                 <div className="guide-tag">AI Summaries</div>
                 <h3>How to Summarize a YouTube Video with AI (Free)</h3>
-                <p>Turn a 2-hour podcast into a 2-minute read — and when not to trust the summary.</p>
+                <p>Turn a 2-hour podcast into a 2-minute read, and when not to trust the summary.</p>
               </div>
             </a>
           </div>
@@ -259,7 +259,7 @@ export default function Home() {
               <summary>Do you download the video?</summary>
               <p>
                 No. We only read the caption track that YouTube already publishes for
-                the video — no video or audio files are ever downloaded or stored.
+                the video. No video or audio files are ever downloaded or stored.
               </p>
             </details>
             <details>
@@ -285,7 +285,7 @@ export default function Home() {
         <div className="wrap">
           <div className="final-cta">
             <h2>Stop watching. Start reading.</h2>
-            <p>Paste a link and get the transcript in five seconds — free, no signup.</p>
+            <p>Paste a link and get the transcript in five seconds. Free, no signup.</p>
             <a className="btn-main" href="#top" style={{ position: "relative" }}>
               Get a transcript now →
             </a>

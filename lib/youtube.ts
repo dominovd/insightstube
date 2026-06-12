@@ -49,7 +49,7 @@ function trackName(t: CaptionTrack): string {
   return t.name?.simpleText ?? t.name?.runs?.map((r) => r.text).join("") ?? t.languageCode;
 }
 
-/** Primary: InnerTube player API as the Android client — not affected by
+/** Primary: InnerTube player API as the Android client, not affected by
  *  the "sign in to confirm you're not a bot" check on datacenter IPs. */
 async function playerViaInnertube(videoId: string): Promise<any> {
   const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
@@ -205,6 +205,42 @@ async function fetchViaGetTranscript(videoId: string): Promise<TranscriptResult>
   };
 }
 
+/** Paid provider (transcriptapi.com), used first when TRANSCRIPT_API_KEY is set.
+ *  Reliable from datacenter IPs; direct methods below remain as fallback. */
+async function fetchViaTranscriptApi(videoId: string): Promise<TranscriptResult> {
+  const key = process.env.TRANSCRIPT_API_KEY;
+  if (!key) throw new Error("no key");
+
+  const res = await fetch(
+    `https://transcriptapi.com/api/v2/youtube/transcript?video_url=${videoId}&format=json&include_timestamp=true&send_metadata=true`,
+    { headers: { authorization: `Bearer ${key}` }, cache: "no-store" }
+  );
+  if (!res.ok) throw new Error(`transcriptapi ${res.status}`);
+  const data = await res.json();
+
+  const segments: Segment[] = (data.transcript ?? [])
+    .map((s: any) => ({
+      start: Math.round(Number(s.start ?? 0) * 100) / 100,
+      dur: Math.round(Number(s.duration ?? 0) * 100) / 100,
+      text: String(s.text ?? "").replace(/\s+/g, " ").trim(),
+    }))
+    .filter((s: Segment) => s.text);
+  if (!segments.length) throw new Error("empty transcript");
+
+  const meta = data.metadata ?? {};
+  const last = segments[segments.length - 1];
+  return {
+    videoId,
+    title: meta.title ?? "YouTube video",
+    author: meta.author ?? meta.channel ?? meta.channel_name ?? "",
+    lengthSeconds: Number(meta.duration ?? 0) || Math.round(last.start + last.dur),
+    lang: meta.language ?? "default",
+    langName: meta.language ?? "Default",
+    availableLangs: [],
+    segments,
+  };
+}
+
 export async function fetchTranscript(
   videoId: string,
   preferredLang?: string,
@@ -212,6 +248,15 @@ export async function fetchTranscript(
 ): Promise<TranscriptResult> {
   let player: any = null;
   const errors: string[] = [];
+
+  // Paid provider first, when configured.
+  if (process.env.TRANSCRIPT_API_KEY) {
+    try {
+      return await fetchViaTranscriptApi(videoId);
+    } catch (e) {
+      errors.push(`api: ${e instanceof Error ? e.message : "failed"}`);
+    }
+  }
 
   // Try InnerTube (Android) first, then the watch page.
   for (const [name, attempt] of [
@@ -243,7 +288,7 @@ export async function fetchTranscript(
       throw new Error(
         debug
           ? errors.join(" | ")
-          : "Couldn't fetch the transcript for this video. It may have no captions, or YouTube is temporarily blocking requests — please try again."
+          : "Couldn't fetch the transcript for this video. It may have no captions, or YouTube is temporarily blocking requests. Please try again."
       );
     }
   }
