@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 async function handle(req: NextRequest, url: string, lang?: string) {
-  const limit = rateLimit(`tr:${clientIp(req)}`, { perMinute: 10, perDay: 200 });
+  const limit = rateLimit(`tr:${clientIp(req)}`, { perMinute: 3, perDay: 5 });
   if (!limit.ok) {
     return NextResponse.json({ error: limit.reason }, { status: 429 });
   }
