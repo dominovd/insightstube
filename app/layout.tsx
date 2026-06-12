@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     "download youtube subtitles",
     "youtube captions download",
   ],
+  alternates: { canonical: "/" },
   openGraph: {
     title: "InsightsTube — Turn any YouTube video into text & insights",
     description:

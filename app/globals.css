@@ -163,6 +163,20 @@ details summary::after{content:"+";font-size:20px;color:var(--ink-3);transition:
 details[open] summary::after{transform:rotate(45deg)}
 details p{margin-top:10px;font-size:14px;color:var(--ink-2)}
 
+/* static pages */
+.page{max-width:760px;margin:0 auto;padding:64px 24px 80px}
+.page h1{font-size:clamp(30px,4vw,42px);margin-bottom:8px}
+.page .page-sub{color:var(--ink-3);font-size:14px;margin-bottom:36px}
+.page h2{font-size:22px;margin:36px 0 12px}
+.page p, .page li{color:var(--ink-2);font-size:15.5px;margin-bottom:12px}
+.page ul{padding-left:22px;margin-bottom:12px}
+.page a{color:var(--accent)}
+.contact-card{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px 26px;margin:24px 0;box-shadow:var(--shadow-sm)}
+.contact-card .ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex-shrink:0}
+.contact-card a{font-weight:700;font-size:17px;color:var(--ink)}
+.contact-card a:hover{color:var(--accent)}
+.contact-card .hint{font-size:13px;color:var(--ink-3)}
+
 /* cta + footer */
 .final-cta{background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:24px;padding:60px 40px;text-align:center;color:#fff;position:relative;overflow:hidden}
 .final-cta::before{content:"";position:absolute;inset:0;background:radial-gradient(50% 80% at 50% 0%,rgba(37,99,235,.35),transparent 70%)}

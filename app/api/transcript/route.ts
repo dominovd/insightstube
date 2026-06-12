@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractVideoId, fetchTranscript } from "@/lib/youtube";
+import { clientIp, rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
+  const limit = rateLimit(`tr:${clientIp(req)}`, { perMinute: 10, perDay: 200 });
+  if (!limit.ok) {
+    return NextResponse.json({ error: limit.reason }, { status: 429 });
+  }
+
   let body: { url?: string; lang?: string };
   try {
     body = await req.json();

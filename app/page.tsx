@@ -1,4 +1,6 @@
 import TranscriptTool from "@/components/TranscriptTool";
+import SiteNav from "@/components/SiteNav";
+import SiteFooter from "@/components/SiteFooter";
 import {
   IconArrowRight,
   IconBriefcase,
@@ -9,7 +11,6 @@ import {
   IconList,
   IconMicroscope,
   IconPen,
-  IconPlay,
   IconSparkles,
   IconTranscript,
   IconTv,
@@ -18,27 +19,7 @@ import {
 export default function Home() {
   return (
     <>
-      <nav className="site">
-        <div className="wrap nav-inner">
-          <a className="logo" href="#top">
-            <span className="logo-mark">
-              <IconPlay size={15} />
-            </span>
-            <span>
-              Insights<b>Tube</b>
-            </span>
-          </a>
-          <div className="nav-links">
-            <a href="#tools">Tools</a>
-            <a href="#how">How it works</a>
-            <a href="#guides">Guides</a>
-            <a href="#faq">FAQ</a>
-          </div>
-          <a className="nav-cta" href="#top">
-            Get transcript
-          </a>
-        </div>
-      </nav>
+      <SiteNav />
 
       <header className="hero" id="top">
         <div className="float-card fc1">
@@ -312,55 +293,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer>
-        <div className="wrap">
-          <div className="foot-grid">
-            <div>
-              <a className="logo" href="#top" style={{ marginBottom: 12 }}>
-                <span className="logo-mark">
-                  <IconPlay size={15} />
-                </span>
-                <span>
-                  Insights<b>Tube</b>
-                </span>
-              </a>
-              <p style={{ maxWidth: 260 }}>
-                Turn any YouTube video into text, summaries and insights. Free tools
-                for people who learn from video.
-              </p>
-            </div>
-            <div>
-              <h4>Tools</h4>
-              <a href="#top">Transcript Generator</a>
-              <a href="#top">AI Summarizer</a>
-              <a href="#top">Subtitle Downloader</a>
-              <a href="#tools">Transcript Translator</a>
-            </div>
-            <div>
-              <h4>Guides</h4>
-              <a href="#guides">YouTube transcripts</a>
-              <a href="#guides">YouTube TV fixes</a>
-              <a href="#guides">AI summaries</a>
-            </div>
-            <div>
-              <h4>Site</h4>
-              <a href="#">About</a>
-              <a href="#">Contact</a>
-              <a href="#">Privacy</a>
-              <a href="#">Terms</a>
-            </div>
-          </div>
-          <div className="foot-note">
-            <span>© 2026 InsightsTube · Not affiliated with YouTube or Google LLC</span>
-            <span>
-              For creators: free YouTube SEO tools at{" "}
-              <a href="https://seocheck.tools" style={{ color: "var(--accent)" }}>
-                seocheck.tools
-              </a>
-            </span>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

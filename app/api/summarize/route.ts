@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIp, rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -6,6 +7,11 @@ export const maxDuration = 60;
 const MAX_TRANSCRIPT_CHARS = 60_000;
 
 export async function POST(req: NextRequest) {
+  const limit = rateLimit(`sum:${clientIp(req)}`, { perMinute: 3, perDay: 20 });
+  if (!limit.ok) {
+    return NextResponse.json({ error: limit.reason }, { status: 429 });
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

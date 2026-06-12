@@ -1,0 +1,56 @@
+import Link from "next/link";
+import { IconPlay } from "./Icons";
+
+export default function SiteFooter() {
+  return (
+    <footer>
+      <div className="wrap">
+        <div className="foot-grid">
+          <div>
+            <Link className="logo" href="/" style={{ marginBottom: 12 }}>
+              <span className="logo-mark">
+                <IconPlay size={15} />
+              </span>
+              <span>
+                Insights<b>Tube</b>
+              </span>
+            </Link>
+            <p style={{ maxWidth: 260 }}>
+              Turn any YouTube video into text, summaries and insights. Free tools for
+              people who learn from video.
+            </p>
+          </div>
+          <div>
+            <h4>Tools</h4>
+            <Link href="/#top">Transcript Generator</Link>
+            <Link href="/#top">AI Summarizer</Link>
+            <Link href="/#top">Subtitle Downloader</Link>
+            <Link href="/#tools">Transcript Translator</Link>
+          </div>
+          <div>
+            <h4>Guides</h4>
+            <Link href="/#guides">YouTube transcripts</Link>
+            <Link href="/#guides">YouTube TV fixes</Link>
+            <Link href="/#guides">AI summaries</Link>
+          </div>
+          <div>
+            <h4>Site</h4>
+            <Link href="/about">About</Link>
+            <Link href="/contact">Contact</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+          </div>
+        </div>
+        <div className="foot-note">
+          <span>© 2026 InsightsTube · Not affiliated with YouTube or Google LLC</span>
+          <span>
+            For creators: free YouTube SEO tools at{" "}
+            <a href="https://seocheck.tools" style={{ color: "var(--accent)" }}>
+              seocheck.tools
+            </a>
+          </span>
+        </div>
+      </div>
+    </footer>
+  );
+}
