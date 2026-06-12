@@ -36,14 +36,35 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "InsightsTube",
-  url: "https://insightstube.com",
-  applicationCategory: "UtilitiesApplication",
-  operatingSystem: "Web",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-  description:
-    "Free YouTube transcript generator and AI video summarizer. Get transcripts with timestamps, download subtitles, and summarize videos with AI.",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://insightstube.com/#org",
+      name: "InsightsTube",
+      url: "https://insightstube.com",
+      logo: "https://insightstube.com/icon.svg",
+      email: "info@insightstube.com",
+      sameAs: ["https://seocheck.tools"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://insightstube.com/#website",
+      name: "InsightsTube",
+      url: "https://insightstube.com",
+      publisher: { "@id": "https://insightstube.com/#org" },
+    },
+    {
+      "@type": "WebApplication",
+      name: "InsightsTube",
+      url: "https://insightstube.com",
+      applicationCategory: "UtilitiesApplication",
+      operatingSystem: "Web",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      publisher: { "@id": "https://insightstube.com/#org" },
+      description:
+        "Free YouTube transcript generator and AI video summarizer. Get transcripts with timestamps, download subtitles, and summarize videos with AI.",
+    },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "How to Get the Transcript of Any YouTube Video",
@@ -48,6 +49,8 @@ const jsonLd = {
       headline: "How to Get the Transcript of Any YouTube Video",
       description:
         "Three practical ways to get a YouTube transcript, copy it, download it, and handle videos with missing captions.",
+      datePublished: "2026-06-12",
+      dateModified: "2026-06-12",
       author: { "@type": "Organization", name: "InsightsTube" },
       publisher: { "@type": "Organization", name: "InsightsTube", url: "https://insightstube.com" },
       mainEntityOfPage: "https://insightstube.com/guides/how-to-get-youtube-transcript",
@@ -322,8 +325,19 @@ step entirely.`}</pre>
         <p>A transcript is useful when you need to:</p>
         <ul>
           <li>Find a quote from an interview.</li>
-          <li>Turn a lecture into study notes.</li>
-          <li>Summarize a long podcast.</li>
+          <li>
+            Turn a lecture into study notes or{" "}
+            <Link href="/guides/how-to-get-insights-from-youtube-video">
+              timestamped insights
+            </Link>
+            .
+          </li>
+          <li>
+            <Link href="/guides/how-to-summarize-youtube-video-with-ai-free">
+              Summarize a long podcast
+            </Link>{" "}
+            with AI.
+          </li>
           <li>Search a webinar for one topic.</li>
           <li>Repurpose a video into a blog post.</li>
           <li>Translate subtitles into another language.</li>
@@ -350,6 +364,8 @@ step entirely.`}</pre>
           title="Get a transcript in five seconds"
           sub="Free YouTube transcript generator with timestamps, downloads and AI insights."
         />
+
+        <RelatedGuides current="how-to-get-youtube-transcript" />
 
         <h2>FAQ</h2>
         <div className="faq" style={{ margin: "24px 0 0" }}>

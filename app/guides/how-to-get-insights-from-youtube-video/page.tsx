@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "How to Get Insights from a YouTube Video",
@@ -48,6 +49,8 @@ const jsonLd = {
       headline: "How to Get Insights from a YouTube Video",
       description:
         "A practical workflow for extracting the main ideas, quotes, themes, and timestamped notes from YouTube videos.",
+      datePublished: "2026-06-12",
+      dateModified: "2026-06-12",
       author: { "@type": "Organization", name: "InsightsTube" },
       publisher: { "@type": "Organization", name: "InsightsTube", url: "https://insightstube.com" },
       mainEntityOfPage: "https://insightstube.com/guides/how-to-get-insights-from-youtube-video",
@@ -276,7 +279,11 @@ export default function Page() {
 
         <p>
           If you are using AI, ask for both. A summary helps you understand the video
-          quickly. Insights help you do something with it.
+          quickly. Insights help you do something with it. Our guide on{" "}
+          <Link href="/guides/how-to-summarize-youtube-video-with-ai-free">
+            summarizing YouTube videos with AI
+          </Link>{" "}
+          includes a ready-to-use prompt for this.
         </p>
 
         <h2>Step 6: Ask Better Questions</h2>
@@ -368,6 +375,8 @@ export default function Page() {
           title="Turn your next video into insights"
           sub="Transcript, AI summary and key takeaways from one link. Free, no signup."
         />
+
+        <RelatedGuides current="how-to-get-insights-from-youtube-video" />
 
         <h2>FAQ</h2>
         <div className="faq" style={{ margin: "24px 0 0" }}>

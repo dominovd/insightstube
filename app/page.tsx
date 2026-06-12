@@ -15,9 +15,76 @@ import {
   IconTranscript,
 } from "@/components/Icons";
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "Is InsightsTube really free?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. You can get YouTube transcripts and download subtitle files for free with no signup. AI summaries and insights may use fair-use limits to keep the tool fast and available.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What are AI video insights?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "AI video insights are the useful ideas extracted from a video transcript, such as the summary, key takeaways, important moments, topics and timestamped notes.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Do I need to create an account?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. Paste a YouTube link and get the transcript directly in your browser. No account or installation is required.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How do I get insights from a YouTube video?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Paste the YouTube link into InsightsTube, generate the transcript, then use AI insights to turn the video into a summary, key takeaways and timestamped notes.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I download the transcript?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. You can copy the transcript as text or download it as TXT, SRT or VTT, depending on what you need.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What if a YouTube video has no captions?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "If a video has no available captions, InsightsTube may not be able to generate a transcript. Try another video or check whether captions are enabled on YouTube.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Do you download the video?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. InsightsTube works with the video's available caption data and does not download the YouTube video itself.",
+      },
+    },
+  ],
+};
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <SiteNav />
 
       <header className="hero" id="top">

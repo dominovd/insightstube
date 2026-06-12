@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "How to Summarize a YouTube Video with AI for Free",
@@ -48,6 +49,8 @@ const jsonLd = {
       headline: "How to Summarize a YouTube Video with AI for Free",
       description:
         "A practical guide to turning long YouTube videos into short summaries, key takeaways, and timestamped notes.",
+      datePublished: "2026-06-12",
+      dateModified: "2026-06-12",
       author: { "@type": "Organization", name: "InsightsTube" },
       publisher: { "@type": "Organization", name: "InsightsTube", url: "https://insightstube.com" },
       mainEntityOfPage: "https://insightstube.com/guides/how-to-summarize-youtube-video-with-ai-free",
@@ -350,7 +353,11 @@ that are not in the transcript.`}
         <p>
           For casual learning, a quick scan may be enough. For publishing, research,
           or citations, always verify important claims against the transcript or
-          original video.
+          original video. If you need more than a summary, see how to{" "}
+          <Link href="/guides/how-to-get-insights-from-youtube-video">
+            extract insights and key takeaways
+          </Link>{" "}
+          from a video.
         </p>
 
         <h2>Common Mistakes</h2>
@@ -381,6 +388,8 @@ that are not in the transcript.`}
           title="From 90 minutes to a 2-minute read"
           sub="Free transcript plus AI summary, key takeaways and timestamps. No signup."
         />
+
+        <RelatedGuides current="how-to-summarize-youtube-video-with-ai-free" />
 
         <h2>FAQ</h2>
         <div className="faq" style={{ margin: "24px 0 0" }}>
