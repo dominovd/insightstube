@@ -191,6 +191,7 @@ details p{margin-top:10px;font-size:14px;color:var(--ink-2)}
 .g-article ol,.g-article ul{padding-left:24px;margin-bottom:14px}
 .g-article li{margin-bottom:7px}
 .g-article a{color:var(--accent)}
+.g-article a.btn-main{color:#fff}
 .g-article b{color:var(--ink)}
 
 figure.g-fig{margin:30px 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-sm)}
