@@ -96,7 +96,13 @@ function download(filename: string, content: string, mime = "text/plain") {
   URL.revokeObjectURL(a.href);
 }
 
-export default function TranscriptTool() {
+export default function TranscriptTool({
+  defaultTab = "transcript",
+  ctaLabel = "Get transcript & insights →",
+}: {
+  defaultTab?: "transcript" | "summary" | "takeaways" | "chat";
+  ctaLabel?: string;
+} = {}) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -132,6 +138,7 @@ export default function TranscriptTool() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
       setData(json);
+      setTab(defaultTab);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -242,7 +249,7 @@ export default function TranscriptTool() {
               <IconLoader size={17} /> Fetching…
             </>
           ) : (
-            <>Get transcript &amp; insights →</>
+            <>{ctaLabel}</>
           )}
         </button>
       </form>

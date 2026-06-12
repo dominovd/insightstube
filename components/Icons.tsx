@@ -130,6 +130,13 @@ export const IconArrowRight = (p: P) => (
   </svg>
 );
 
+export const IconChat = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.5A8 8 0 1 1 21 12z" />
+    <path d="M8.5 10.5h7M8.5 14h4.5" />
+  </svg>
+);
+
 export const IconLoader = (p: P) => (
   <svg {...base(p)} className={`spin ${p.className ?? ""}`}>
     <path d="M21 12a9 9 0 1 1-6.2-8.56" />

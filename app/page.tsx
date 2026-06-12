@@ -5,6 +5,7 @@ import {
   IconArrowRight,
   IconBriefcase,
   IconCaptions,
+  IconChat,
   IconCheck,
   IconGlobe,
   IconGraduation,
@@ -245,6 +246,19 @@ export default function Home() {
               </p>
               <span className="go">
                 Get insights <IconArrowRight size={13} />
+              </span>
+            </a>
+            <a className="tool-card" href="/chat-with-youtube-transcript">
+              <div className="tool-ic ic-blue">
+                <IconChat size={22} />
+              </div>
+              <h3>Chat with YouTube Transcript</h3>
+              <p>
+                Ask questions about any video and get answers from the transcript,
+                with quotes and timestamps.
+              </p>
+              <span className="go">
+                Start chatting <IconArrowRight size={13} />
               </span>
             </a>
             <a className="tool-card" href="#top">

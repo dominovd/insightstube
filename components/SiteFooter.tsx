@@ -23,6 +23,7 @@ export default function SiteFooter() {
           <div>
             <h4>Tools</h4>
             <Link href="/#top">Transcript Generator</Link>
+            <Link href="/chat-with-youtube-transcript">Chat with YouTube Transcript</Link>
             <Link href="/#top">AI Summarizer</Link>
             <Link href="/#top">Subtitle Downloader</Link>
             <Link href="/#tools">Transcript Translator</Link>
