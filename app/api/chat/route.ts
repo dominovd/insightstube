@@ -14,7 +14,7 @@ interface ChatMessage {
 }
 
 export async function POST(req: NextRequest) {
-  const limit = rateLimit(`chat:${clientIp(req)}`, { perMinute: 3, perDay: 7 });
+  const limit = rateLimit(`chat:${clientIp(req)}`, { perMinute: 2, perDay: 3 });
   if (!limit.ok) {
     return NextResponse.json({ error: limit.reason }, { status: 429 });
   }
