@@ -16,7 +16,7 @@ export default function SiteNav() {
         <div className="nav-links">
           <Link href="/#tools">Tools</Link>
           <Link href="/#how">How it works</Link>
-          <Link href="/#guides">Guides</Link>
+          <Link href="/guides">Guides</Link>
           <Link href="/#faq">FAQ</Link>
         </div>
         <Link className="nav-cta" href="/#top">

@@ -246,7 +246,7 @@ export default function Home() {
           <div className="sec-label">Guides</div>
           <h2>Learn how to get more from YouTube videos</h2>
           <div className="guides">
-            <a className="guide-card" href="#">
+            <a className="guide-card" href="/guides/how-to-get-youtube-transcript">
               <div className="guide-img gi-1">
                 <IconTranscript size={38} />
               </div>
@@ -256,7 +256,7 @@ export default function Home() {
                 <p>Built-in transcripts, one-click tools and what to do when captions are disabled.</p>
               </div>
             </a>
-            <a className="guide-card" href="#">
+            <a className="guide-card" href="/guides/how-to-get-insights-from-youtube-video">
               <div className="guide-img gi-2">
                 <IconSparkles size={38} />
               </div>
@@ -266,7 +266,7 @@ export default function Home() {
                 <p>Use transcripts, summaries and timestamps to pull out the ideas that matter.</p>
               </div>
             </a>
-            <a className="guide-card" href="#">
+            <a className="guide-card" href="/guides/how-to-summarize-youtube-video-with-ai-free">
               <div className="guide-img gi-3">
                 <IconList size={38} />
               </div>

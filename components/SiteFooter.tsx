@@ -29,9 +29,10 @@ export default function SiteFooter() {
           </div>
           <div>
             <h4>Guides</h4>
-            <Link href="/#guides">YouTube transcripts</Link>
-            <Link href="/#guides">YouTube TV fixes</Link>
-            <Link href="/#guides">AI summaries</Link>
+            <Link href="/guides/how-to-get-youtube-transcript">YouTube transcripts</Link>
+            <Link href="/guides/how-to-get-insights-from-youtube-video">Video insights</Link>
+            <Link href="/guides/how-to-summarize-youtube-video-with-ai-free">AI summaries</Link>
+            <Link href="/guides">All guides</Link>
           </div>
           <div>
             <h4>Site</h4>
