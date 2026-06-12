@@ -34,6 +34,40 @@ interface SummaryData {
   takeaways: { text: string; timestamp: string }[];
 }
 
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+function tsToSeconds(ts: string): number {
+  const parts = ts.split(":").map(Number);
+  return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
+}
+
+/** Renders text with [mm:ss] timestamps as links to the video moment. */
+function TimestampedText({ text, videoId }: { text: string; videoId: string }) {
+  const parts = text.split(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <a
+            key={i}
+            className="ts"
+            href={`https://www.youtube.com/watch?v=${videoId}&t=${tsToSeconds(part)}s`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 function fmtTime(sec: number): string {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
@@ -67,7 +101,11 @@ export default function TranscriptTool() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<TranscriptData | null>(null);
-  const [tab, setTab] = useState<"transcript" | "summary" | "takeaways">("transcript");
+  const [tab, setTab] = useState<"transcript" | "summary" | "takeaways" | "chat">("transcript");
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
   const [showTs, setShowTs] = useState(true);
   const [copied, setCopied] = useState(false);
   const [summary, setSummary] = useState<SummaryData | null>(null);
@@ -82,6 +120,8 @@ export default function TranscriptTool() {
     setData(null);
     setSummary(null);
     setSumError("");
+    setChat([]);
+    setChatError("");
     setTab("transcript");
     try {
       const res = await fetch("/api/transcript", {
@@ -153,7 +193,33 @@ export default function TranscriptTool() {
 
   function selectTab(t: typeof tab) {
     setTab(t);
-    if (t !== "transcript") getSummary();
+    if (t === "summary" || t === "takeaways") getSummary();
+  }
+
+  async function sendChat(e: React.FormEvent) {
+    e.preventDefault();
+    const q = chatInput.trim();
+    if (!q || !data || chatLoading) return;
+    const next: ChatMessage[] = [...chat, { role: "user", content: q }];
+    setChat(next);
+    setChatInput("");
+    setChatLoading(true);
+    setChatError("");
+    try {
+      const text = data.segments.map((s) => `[${fmtTime(s.start)}] ${s.text}`).join("\n");
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: data.title, transcript: text, messages: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Could not generate an answer.");
+      setChat([...next, { role: "assistant", content: json.answer }]);
+    } catch (e) {
+      setChatError(e instanceof Error ? e.message : "Could not generate an answer.");
+    } finally {
+      setChatLoading(false);
+    }
   }
 
   return (
@@ -220,6 +286,12 @@ export default function TranscriptTool() {
               onClick={() => selectTab("takeaways")}
             >
               Key Takeaways
+            </button>
+            <button
+              className={`tab ${tab === "chat" ? "active" : ""}`}
+              onClick={() => selectTab("chat")}
+            >
+              Chat
             </button>
           </div>
 
@@ -339,6 +411,46 @@ export default function TranscriptTool() {
                   </div>
                 </>
               )}
+            </div>
+          )}
+          {tab === "chat" && (
+            <div className="panel">
+              <div className="chat-list">
+                {chat.length === 0 && (
+                  <div className="panel-empty" style={{ padding: "20px 10px" }}>
+                    Ask anything about this video: &quot;What are the main points?&quot;,
+                    &quot;What does the speaker say about X?&quot;, &quot;Best quotes with
+                    timestamps?&quot;
+                  </div>
+                )}
+                {chat.map((m, i) => (
+                  <div key={i} className={`msg ${m.role === "user" ? "me" : "ai"}`}>
+                    {m.role === "assistant" ? (
+                      <TimestampedText text={m.content} videoId={data.videoId} />
+                    ) : (
+                      m.content
+                    )}
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div className="msg ai">
+                    <IconLoader size={15} /> Reading the transcript…
+                  </div>
+                )}
+              </div>
+              {chatError && <div className="err-box" style={{ margin: "10px 0" }}>{chatError}</div>}
+              <form className="chat-input" onSubmit={sendChat}>
+                <input
+                  type="text"
+                  placeholder="Ask about this video…"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  maxLength={500}
+                />
+                <button className="btn-main" type="submit" disabled={chatLoading || !chatInput.trim()}>
+                  Send
+                </button>
+              </form>
             </div>
           )}
         </div>

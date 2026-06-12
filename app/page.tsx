@@ -151,6 +151,10 @@ export default function Home() {
             </span>
             <span>
               <IconCheck size={15} />
+              Chat with the video
+            </span>
+            <span>
+              <IconCheck size={15} />
               No signup
             </span>
           </div>
