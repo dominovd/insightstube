@@ -97,6 +97,20 @@ const exampleVideos = [
   },
 ];
 
+/** Extract an 11-char YouTube video id from a URL or bare id (client-side). */
+function clientVideoId(input: string): string | null {
+  const t = input.trim();
+  if (/^[\w-]{11}$/.test(t)) return t;
+  const m = t.match(/(?:v=|\/(?:shorts|embed|live)\/|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+// Examples are pre-cached as static JSON (see scripts/cache-examples.mjs) so
+// clicking one serves a committed file instead of spending an API request.
+const EXAMPLE_IDS = new Set(
+  exampleVideos.map((e) => clientVideoId(e.url)).filter((id): id is string => Boolean(id))
+);
+
 function tsToSeconds(ts: string): number {
   const parts = ts.split(":").map(Number);
   return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
@@ -258,6 +272,23 @@ export default function TranscriptTool({
     setQuery("");
     setTab("transcript");
     try {
+      // Examples are pre-cached as static JSON: serve them without an API call
+      // (saves a transcript request and loads instantly). Falls back to the API
+      // if the cache file isn't there yet.
+      const id = clientVideoId(url);
+      if (id && EXAMPLE_IDS.has(id)) {
+        try {
+          const cached = await fetch(`/examples/${id}.json`);
+          if (cached.ok) {
+            setData(await cached.json());
+            setTab(defaultTab);
+            return;
+          }
+        } catch {
+          /* fall through to the live API */
+        }
+      }
+
       const res = await fetch("/api/transcript", {
         method: "POST",
         headers: { "content-type": "application/json" },
