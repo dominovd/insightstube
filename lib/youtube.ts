@@ -49,6 +49,15 @@ function trackName(t: CaptionTrack): string {
   return t.name?.simpleText ?? t.name?.runs?.map((r) => r.text).join("") ?? t.languageCode;
 }
 
+function captionJsonUrl(baseUrl: string): string {
+  const url = new URL(baseUrl);
+  url.searchParams.set("fmt", "json3");
+  url.searchParams.set("xorb", "2");
+  url.searchParams.set("xobt", "3");
+  url.searchParams.set("xovt", "3");
+  return url.toString();
+}
+
 /** Primary: InnerTube player API as the Android client, not affected by
  *  the "sign in to confirm you're not a bot" check on datacenter IPs. */
 async function playerViaInnertube(videoId: string): Promise<any> {
@@ -78,6 +87,40 @@ async function playerViaInnertube(videoId: string): Promise<any> {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`InnerTube returned ${res.status}`);
+  return res.json();
+}
+
+/** Web InnerTube often exposes the full caption track list for multilingual
+ *  videos, letting us prefer English instead of YouTube's transcript-panel default. */
+async function playerViaWebInnertube(videoId: string): Promise<any> {
+  const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "user-agent": WEB_UA,
+      origin: "https://www.youtube.com",
+      referer: `https://www.youtube.com/watch?v=${videoId}&hl=en`,
+      "accept-language": "en-US,en;q=0.9",
+      "x-youtube-client-name": "1",
+      "x-youtube-client-version": "2.20250606.01.00",
+    },
+    body: JSON.stringify({
+      context: {
+        client: {
+          clientName: "WEB",
+          clientVersion: "2.20250606.01.00",
+          hl: "en",
+          gl: "US",
+          utcOffsetMinutes: 0,
+        },
+      },
+      videoId,
+      contentCheckOk: true,
+      racyCheckOk: true,
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Web InnerTube returned ${res.status}`);
   return res.json();
 }
 
@@ -261,6 +304,7 @@ export async function fetchTranscript(
   // Try InnerTube (Android) first, then the watch page.
   for (const [name, attempt] of [
     ["android", playerViaInnertube],
+    ["web", playerViaWebInnertube],
     ["watch", playerViaWatchPage],
   ] as const) {
     try {
@@ -304,9 +348,7 @@ export async function fetchTranscript(
     tracks.find((t) => t.kind !== "asr") ||
     tracks[0];
 
-  const capUrl =
-    (pick.baseUrl.includes("fmt=") ? pick.baseUrl : pick.baseUrl + "&fmt=json3") +
-    "&xorb=2&xobt=3&xovt=3"; // harmless params some clients send
+  const capUrl = captionJsonUrl(pick.baseUrl);
 
   let cap: any;
   try {
