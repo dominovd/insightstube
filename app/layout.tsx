@@ -14,6 +14,9 @@ export const metadata: Metadata = {
     "youtube video summarizer",
     "download youtube subtitles",
     "youtube captions download",
+    "youtube transcript for chatgpt",
+    "chat with youtube transcript",
+    "translate youtube transcript",
   ],
   alternates: { canonical: "/" },
   openGraph: {

@@ -39,6 +39,24 @@ interface ChatMessage {
   content: string;
 }
 
+const exampleVideos = [
+  {
+    label: "TED talk",
+    title: "Master procrastination",
+    url: "https://www.youtube.com/watch?v=arj7oStGLkU",
+  },
+  {
+    label: "Leadership",
+    title: "Inspire action",
+    url: "https://www.youtube.com/watch?v=qp0HIF3SfI4",
+  },
+  {
+    label: "Education",
+    title: "Imposter syndrome",
+    url: "https://www.youtube.com/watch?v=ZQUxL4Jm1Lo",
+  },
+];
+
 function tsToSeconds(ts: string): number {
   const parts = ts.split(":").map(Number);
   return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
@@ -99,9 +117,11 @@ function download(filename: string, content: string, mime = "text/plain") {
 export default function TranscriptTool({
   defaultTab = "transcript",
   ctaLabel = "Get transcript & insights →",
+  showExamples = true,
 }: {
   defaultTab?: "transcript" | "summary" | "takeaways" | "chat";
   ctaLabel?: string;
+  showExamples?: boolean;
 } = {}) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -253,6 +273,26 @@ export default function TranscriptTool({
           )}
         </button>
       </form>
+
+      {showExamples && !data && (
+        <div className="example-videos" aria-label="Example YouTube videos">
+          <span>Try an example:</span>
+          {exampleVideos.map((example) => (
+            <button
+              key={example.url}
+              type="button"
+              onClick={() => {
+                setUrl(example.url);
+                setError("");
+              }}
+              aria-label={`Use example video: ${example.title}`}
+            >
+              <b>{example.label}</b>
+              {example.title}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && <div className="err-box">{error}</div>}
 

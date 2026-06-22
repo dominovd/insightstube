@@ -45,12 +45,6 @@ export default function SiteFooter() {
         </div>
         <div className="foot-note">
           <span>© 2026 InsightsTube · Not affiliated with YouTube or Google LLC</span>
-          <span>
-            For creators: free YouTube SEO tools at{" "}
-            <a href="https://seocheck.tools" style={{ color: "var(--accent)" }}>
-              seocheck.tools
-            </a>
-          </span>
         </div>
       </div>
     </footer>

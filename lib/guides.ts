@@ -39,4 +39,24 @@ export const guides: GuideMeta[] = [
     gradient: "gi-3",
     datePublished: "2026-06-12",
   },
+  {
+    slug: "how-to-use-youtube-transcript-with-chatgpt-claude",
+    tag: "AI Prompts",
+    title: "How to Use a YouTube Transcript with ChatGPT or Claude",
+    description:
+      "Copy a YouTube transcript into ChatGPT, Claude or Gemini and turn it into summaries, notes, quotes and action items.",
+    icon: "sparkles",
+    gradient: "gi-2",
+    datePublished: "2026-06-22",
+  },
+  {
+    slug: "how-to-translate-youtube-transcript",
+    tag: "Translation",
+    title: "How to Translate a YouTube Transcript",
+    description:
+      "Learn how to translate YouTube transcripts with AI, keep timestamps, and use translated text for subtitles, study and research.",
+    icon: "transcript",
+    gradient: "gi-1",
+    datePublished: "2026-06-22",
+  },
 ];

@@ -62,6 +62,46 @@ const faqJsonLd = {
     },
     {
       "@type": "Question",
+      name: "How accurate are YouTube transcripts?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "InsightsTube uses the caption tracks available for the YouTube video. Human-created captions are usually more accurate, while auto-generated captions depend on audio quality, accents, background noise and the topic.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I use a YouTube transcript with ChatGPT, Claude or Gemini?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Copy the transcript with timestamps and paste it into ChatGPT, Claude, Gemini or another AI tool. You can also use InsightsTube's built-in AI summary and chat features directly on the transcript.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I translate a YouTube transcript?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "If the YouTube video has caption tracks in multiple languages, InsightsTube can work with the available transcript language. You can also copy the transcript into a translation tool or AI assistant.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I get a YouTube transcript without timestamps?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. After generating the transcript, you can copy clean text without timestamps or keep timestamps when you need citations and links back to exact moments.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does it work with YouTube Shorts and long videos?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "InsightsTube works with public YouTube videos that have available captions, including many Shorts, podcasts, tutorials, lectures and long-form videos.",
+      },
+    },
+    {
+      "@type": "Question",
       name: "What if a YouTube video has no captions?",
       acceptedAnswer: {
         "@type": "Answer",
@@ -214,6 +254,65 @@ export default function Home() {
         </div>
       </section>
 
+      <section>
+        <div className="wrap center">
+          <div className="sec-label">Why InsightsTube</div>
+          <h2>A transcript tool made for understanding, not just exporting</h2>
+          <p className="sec-sub">
+            Most transcript tools stop at raw text. InsightsTube keeps the fast
+            transcript workflow and adds the AI layer you need to summarize, search
+            and ask questions about the video.
+          </p>
+          <div className="compare">
+            <div className="compare-col muted">
+              <h3>Basic transcript workflow</h3>
+              <ul>
+                <li>Copy YouTube captions manually</li>
+                <li>Paste long text into another AI tool</li>
+                <li>Lose timestamp context while summarizing</li>
+                <li>Switch tabs to search, cite or export</li>
+              </ul>
+            </div>
+            <div className="compare-col featured">
+              <h3>InsightsTube workflow</h3>
+              <ul>
+                <li><IconCheck size={15} /> Generate a clean transcript in one place</li>
+                <li><IconCheck size={15} /> Keep clickable timestamps for context</li>
+                <li><IconCheck size={15} /> Summarize and extract key moments with AI</li>
+                <li><IconCheck size={15} /> Chat with the transcript when you need answers</li>
+              </ul>
+            </div>
+          </div>
+          <div className="seo-matrix" aria-label="Transcript workflow comparison">
+            <div className="seo-matrix-row head">
+              <span>Feature</span>
+              <span>Manual YouTube transcript</span>
+              <span>InsightsTube</span>
+            </div>
+            <div className="seo-matrix-row">
+              <span>Transcript with timestamps</span>
+              <span>Copy and clean manually</span>
+              <span>Generated in a readable format</span>
+            </div>
+            <div className="seo-matrix-row">
+              <span>Download subtitles</span>
+              <span>Not built in</span>
+              <span>TXT, SRT and VTT export</span>
+            </div>
+            <div className="seo-matrix-row">
+              <span>AI summary</span>
+              <span>Paste into another tool</span>
+              <span>Summary and key takeaways from the transcript</span>
+            </div>
+            <div className="seo-matrix-row">
+              <span>Ask questions</span>
+              <span>Search the page manually</span>
+              <span>Chat with the YouTube transcript</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="tools" className="tinted">
         <div className="wrap center">
           <div className="sec-label">Toolkit</div>
@@ -291,6 +390,55 @@ export default function Home() {
 
       <section>
         <div className="wrap center">
+          <div className="sec-label">AI prompt starters</div>
+          <h2>Use YouTube transcripts with ChatGPT, Claude and Gemini</h2>
+          <p className="sec-sub">
+            Copy a clean YouTube transcript into your favorite AI tool, or use
+            InsightsTube to summarize and chat with the video directly.
+          </p>
+          <div className="prompt-grid">
+            <div className="prompt-card">
+              <div className="prompt-tag">Summary</div>
+              <h3>Extract the main idea</h3>
+              <p>Summarize the video in plain language and list the key takeaways with timestamps.</p>
+              <div className="prompt-example">
+                Summarize this YouTube transcript in 5 bullet points and include the
+                most useful timestamps.
+              </div>
+            </div>
+            <div className="prompt-card">
+              <div className="prompt-tag">Study</div>
+              <h3>Create study notes</h3>
+              <p>Convert the transcript into organized notes, definitions and review questions.</p>
+              <div className="prompt-example">
+                Turn this transcript into study notes with headings, key concepts and
+                10 quiz questions.
+              </div>
+            </div>
+            <div className="prompt-card">
+              <div className="prompt-tag">Research</div>
+              <h3>Find evidence</h3>
+              <p>Pull out claims, examples and quotable moments with links back to the video.</p>
+              <div className="prompt-example">
+                Extract the main claims, supporting examples and quotable lines with
+                timestamps.
+              </div>
+            </div>
+            <div className="prompt-card">
+              <div className="prompt-tag">Content</div>
+              <h3>Repurpose the video</h3>
+              <p>Draft a blog outline, newsletter, social posts or talking points from the transcript.</p>
+              <div className="prompt-example">
+                Convert this transcript into a blog outline, newsletter intro and 5
+                social posts.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="wrap center">
           <div className="sec-label">Who it&apos;s for</div>
           <h2>Built for people who need answers from video</h2>
           <div className="aud">
@@ -322,6 +470,27 @@ export default function Home() {
               <h3>Professionals</h3>
               <p>Get the main ideas from webinars, keynotes and training videos without watching every minute.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="tinted">
+        <div className="wrap center">
+          <div className="sec-label">Formats and languages</div>
+          <h2>YouTube transcripts in multiple formats and languages</h2>
+          <p className="sec-sub">
+            Work with the transcript in the format that fits your next step. Keep
+            timestamps for citations, remove them for clean notes, or export subtitles
+            for editing workflows.
+          </p>
+          <div className="format-row">
+            <div className="format-pill"><b>TXT</b><span>Clean text for AI tools</span></div>
+            <div className="format-pill"><b>SRT</b><span>Subtitle editing format</span></div>
+            <div className="format-pill"><b>VTT</b><span>Web captions with timing</span></div>
+            <div className="format-pill"><b>Copy</b><span>Paste into docs or chat</span></div>
+          </div>
+          <div className="language-strip">
+            <span>Works with available YouTube caption tracks in English, Spanish, French, German, Portuguese, Russian, Ukrainian and more. Use the transcript for translation, study notes, subtitles and AI summaries.</span>
           </div>
         </div>
       </section>
@@ -406,6 +575,46 @@ export default function Home() {
               <p>
                 Yes. You can copy the transcript as text or download it as TXT, SRT or
                 VTT, depending on what you need.
+              </p>
+            </details>
+            <details>
+              <summary>How accurate are YouTube transcripts?</summary>
+              <p>
+                InsightsTube uses the caption tracks available for the YouTube video.
+                Human-created captions are usually more accurate, while auto-generated
+                captions depend on audio quality, accents, background noise and the topic.
+              </p>
+            </details>
+            <details>
+              <summary>Can I use a YouTube transcript with ChatGPT, Claude or Gemini?</summary>
+              <p>
+                Yes. Copy the transcript with timestamps and paste it into ChatGPT,
+                Claude, Gemini or another AI tool. You can also use InsightsTube&apos;s
+                built-in AI summary and chat features directly on the transcript.
+              </p>
+            </details>
+            <details>
+              <summary>Can I translate a YouTube transcript?</summary>
+              <p>
+                If the YouTube video has caption tracks in multiple languages,
+                InsightsTube can work with the available transcript language. You can
+                also copy the transcript into a translation tool or AI assistant.
+              </p>
+            </details>
+            <details>
+              <summary>Can I get a YouTube transcript without timestamps?</summary>
+              <p>
+                Yes. After generating the transcript, you can copy clean text without
+                timestamps or keep timestamps when you need citations and links back
+                to exact moments.
+              </p>
+            </details>
+            <details>
+              <summary>Does it work with YouTube Shorts and long videos?</summary>
+              <p>
+                InsightsTube works with public YouTube videos that have available
+                captions, including many Shorts, podcasts, tutorials, lectures and
+                long-form videos.
               </p>
             </details>
             <details>
