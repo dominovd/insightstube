@@ -13,7 +13,6 @@ export interface TranscriptResult {
   langName: string;
   availableLangs: { code: string; name: string }[];
   segments: Segment[];
-  debugTrace?: string[];
 }
 
 const WEB_UA =
@@ -48,24 +47,6 @@ interface CaptionTrack {
 
 function trackName(t: CaptionTrack): string {
   return t.name?.simpleText ?? t.name?.runs?.map((r) => r.text).join("") ?? t.languageCode;
-}
-
-/** Human-friendly label for a bare language code (used by providers that only
- *  return a code, like transcriptapi). Falls back to the code itself. */
-function langLabel(code: string): string {
-  if (!code || code === "default") return "Default";
-  const base = code.split("-")[0].toLowerCase();
-  try {
-    const dn = new Intl.DisplayNames(["en"], { type: "language" });
-    return dn.of(base) ?? code;
-  } catch {
-    return code;
-  }
-}
-
-/** True when a caption language code is an English variant (en, en-US, en-GB…). */
-function isEnglish(code: string): boolean {
-  return /^en(-|$)/i.test(code);
 }
 
 function captionJsonUrl(baseUrl: string): string {
@@ -176,9 +157,48 @@ function deepFind(obj: any, key: string): any {
   return undefined;
 }
 
-function parsePanelSegments(data: any): Segment[] {
+/** Most datacenter-reliable: the engagement-panel transcript endpoint that
+ *  youtube.com itself uses for the "Show transcript" button. The params are
+ *  taken from the `next` response instead of hand-crafting protobuf. */
+async function fetchViaGetTranscript(videoId: string): Promise<TranscriptResult> {
+  const context = {
+    client: { clientName: "WEB", clientVersion: "2.20250606.01.00", hl: "en", gl: "US" },
+  };
+  const headers = {
+    "content-type": "application/json",
+    "user-agent": WEB_UA,
+    origin: "https://www.youtube.com",
+    referer: `https://www.youtube.com/watch?v=${videoId}`,
+  };
+
+  const nextRes = await fetch("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ context, videoId }),
+    cache: "no-store",
+  });
+  if (!nextRes.ok) throw new Error(`next returned ${nextRes.status}`);
+  const nextData = await nextRes.json();
+
+  const transcriptEndpoint = deepFind(nextData, "getTranscriptEndpoint");
+  const params = transcriptEndpoint?.params;
+  if (!params) throw new Error("No transcript panel for this video.");
+
+  const res = await fetch(
+    "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ context, params }),
+      cache: "no-store",
+    }
+  );
+  if (!res.ok) throw new Error(`get_transcript returned ${res.status}`);
+  const data = await res.json();
+
   const initialSegments = deepFind(data, "initialSegments") ?? [];
-  return initialSegments
+
+  const segments: Segment[] = initialSegments
     .map((s: any) => s.transcriptSegmentRenderer)
     .filter(Boolean)
     .map((r: any) => {
@@ -195,111 +215,7 @@ function parsePanelSegments(data: any): Segment[] {
       };
     })
     .filter((s: Segment) => s.text);
-}
 
-interface PanelLangItem {
-  title: string;
-  selected: boolean;
-  params?: string;
-}
-
-/** The transcript panel exposes a language picker in its footer. Each item
- *  carries the `params`/continuation needed to re-request get_transcript in
- *  that language, which is how we get English instead of YouTube's default. */
-function panelLanguageItems(data: any): PanelLangItem[] {
-  const items = deepFind(data, "subMenuItems") ?? [];
-  if (!Array.isArray(items)) return [];
-  return items.map((it: any) => {
-    const ep =
-      it?.continuation?.reloadContinuationData?.continuation ??
-      deepFind(it, "reloadContinuationData")?.continuation ??
-      deepFind(it, "getTranscriptEndpoint")?.params;
-    return {
-      title: String(it?.title?.simpleText ?? it?.title ?? ""),
-      selected: Boolean(it?.selected),
-      params: typeof ep === "string" ? ep : undefined,
-    };
-  });
-}
-
-function pickEnglishPanelItem(items: PanelLangItem[]): PanelLangItem | undefined {
-  const en = (t: string) => /english/i.test(t);
-  return (
-    items.find((i) => /^english$/i.test(i.title)) ||
-    items.find((i) => en(i.title) && !/auto-?generated/i.test(i.title)) ||
-    items.find((i) => en(i.title))
-  );
-}
-
-/** Most datacenter-reliable: the engagement-panel transcript endpoint that
- *  youtube.com itself uses for the "Show transcript" button. Now language-aware:
- *  if the default panel language isn't what we want, switch via the footer
- *  language menu (English by default). */
-async function fetchViaGetTranscript(
-  videoId: string,
-  preferredLang?: string
-): Promise<TranscriptResult> {
-  const context = {
-    client: { clientName: "WEB", clientVersion: "2.20250606.01.00", hl: "en", gl: "US" },
-  };
-  const headers = {
-    "content-type": "application/json",
-    "user-agent": WEB_UA,
-    origin: "https://www.youtube.com",
-    referer: `https://www.youtube.com/watch?v=${videoId}`,
-  };
-
-  const callTranscript = async (params: string) => {
-    const res = await fetch(
-      "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false",
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ context, params }),
-        cache: "no-store",
-      }
-    );
-    if (!res.ok) throw new Error(`get_transcript returned ${res.status}`);
-    return res.json();
-  };
-
-  const nextRes = await fetch("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ context, videoId }),
-    cache: "no-store",
-  });
-  if (!nextRes.ok) throw new Error(`next returned ${nextRes.status}`);
-  const nextData = await nextRes.json();
-
-  const transcriptEndpoint = deepFind(nextData, "getTranscriptEndpoint");
-  const params = transcriptEndpoint?.params;
-  if (!params) throw new Error("No transcript panel for this video.");
-
-  let data = await callTranscript(params);
-  let items = panelLanguageItems(data);
-  let chosen = items.find((i) => i.selected);
-
-  // Switch language if the default isn't English (or the explicit preference).
-  const wantEnglish = !preferredLang || /^en/i.test(preferredLang);
-  const target = wantEnglish
-    ? pickEnglishPanelItem(items)
-    : items.find((i) => i.title.toLowerCase().includes(preferredLang!.toLowerCase()));
-  if (target && !target.selected && target.params) {
-    try {
-      const switched = await callTranscript(target.params);
-      const switchedSegs = parsePanelSegments(switched);
-      if (switchedSegs.length) {
-        data = switched;
-        items = panelLanguageItems(data);
-        chosen = target;
-      }
-    } catch {
-      /* keep the default-language panel */
-    }
-  }
-
-  const segments = parsePanelSegments(data);
   if (!segments.length) throw new Error("No transcript segments returned.");
 
   // Title/author via oEmbed (lightweight, rarely bot-checked)
@@ -319,24 +235,15 @@ async function fetchViaGetTranscript(
     /* non-fatal */
   }
 
-  const chosenTitle = chosen?.title ?? "";
-  const lang = /english/i.test(chosenTitle)
-    ? "en"
-    : chosenTitle
-      ? chosenTitle.toLowerCase()
-      : "default";
-
   const last = segments[segments.length - 1];
   return {
     videoId,
     title,
     author,
     lengthSeconds: Math.round(last.start + last.dur),
-    lang,
-    langName: chosenTitle || "Default",
-    availableLangs: items
-      .filter((i) => i.title)
-      .map((i) => ({ code: i.title.toLowerCase(), name: i.title })),
+    lang: "default",
+    langName: "Default",
+    availableLangs: [],
     segments,
   };
 }
@@ -364,33 +271,37 @@ async function fetchViaTranscriptApi(videoId: string): Promise<TranscriptResult>
   if (!segments.length) throw new Error("empty transcript");
 
   const meta = data.metadata ?? {};
-  // transcriptapi returns the caption language at the top level (`data.language`),
-  // not inside `metadata` — reading the wrong field made everything show "Default".
-  const lang = String(data.language ?? meta.language ?? "default");
   const last = segments[segments.length - 1];
   return {
     videoId,
-    title: meta.title ?? data.title ?? "YouTube video",
-    author: meta.author_name ?? meta.author ?? meta.channel ?? meta.channel_name ?? "",
+    title: meta.title ?? "YouTube video",
+    author: meta.author ?? meta.channel ?? meta.channel_name ?? "",
     lengthSeconds: Number(meta.duration ?? 0) || Math.round(last.start + last.dur),
-    lang,
-    langName: langLabel(lang),
+    lang: meta.language ?? "default",
+    langName: meta.language ?? "Default",
     availableLangs: [],
     segments,
   };
 }
 
-/** Language-aware path: read the caption track list via InnerTube and download
- *  the right track. Unlike transcriptapi, this lets us prefer the original /
- *  English track instead of YouTube's translation default. Returns null when no
- *  caption tracks are exposed (so the caller can fall back). */
-async function fetchViaPlayerTracks(
+export async function fetchTranscript(
   videoId: string,
-  preferredLang: string | undefined,
-  errors: string[]
-): Promise<TranscriptResult | null> {
+  preferredLang?: string,
+  debug = false
+): Promise<TranscriptResult> {
   let player: any = null;
+  const errors: string[] = [];
 
+  // Paid provider first, when configured.
+  if (process.env.TRANSCRIPT_API_KEY) {
+    try {
+      return await fetchViaTranscriptApi(videoId);
+    } catch (e) {
+      errors.push(`api: ${e instanceof Error ? e.message : "failed"}`);
+    }
+  }
+
+  // Try InnerTube (Android) first, then the watch page.
   for (const [name, attempt] of [
     ["android", playerViaInnertube],
     ["web", playerViaWebInnertube],
@@ -412,16 +323,28 @@ async function fetchViaPlayerTracks(
     }
   }
 
-  if (!player || !extractTracks(player).length) return null;
+  if (!player || !extractTracks(player).length) {
+    // Final fallback: the endpoint youtube.com itself uses for "Show transcript".
+    try {
+      return await fetchViaGetTranscript(videoId);
+    } catch (e) {
+      errors.push(`panel: ${e instanceof Error ? e.message : "failed"}`);
+      throw new Error(
+        debug
+          ? errors.join(" | ")
+          : "Couldn't fetch the transcript for this video. It may have no captions, or YouTube is temporarily blocking requests. Please try again."
+      );
+    }
+  }
 
   const details = player.videoDetails ?? {};
   const tracks = extractTracks(player);
 
-  // pick track: explicit preferred → manual en → any en → first manual → first
+  // pick track: preferred → manual en → any en → first manual → first
   const pick =
     (preferredLang && tracks.find((t) => t.languageCode === preferredLang)) ||
-    tracks.find((t) => isEnglish(t.languageCode) && t.kind !== "asr") ||
-    tracks.find((t) => isEnglish(t.languageCode)) ||
+    tracks.find((t) => t.languageCode.startsWith("en") && t.kind !== "asr") ||
+    tracks.find((t) => t.languageCode.startsWith("en")) ||
     tracks.find((t) => t.kind !== "asr") ||
     tracks[0];
 
@@ -465,102 +388,4 @@ async function fetchViaPlayerTracks(
     availableLangs: tracks.map((t) => ({ code: t.languageCode, name: trackName(t) })),
     segments,
   };
-}
-
-/** Content-based English check, independent of how a provider labels the track.
- *  Guards against providers that mislabel a translation as the requested code. */
-function looksEnglish(result: TranscriptResult): boolean {
-  const sample = result.segments.slice(0, 40).map((s) => s.text).join(" ");
-  const compact = sample.replace(/\s+/g, "");
-  if (!compact.length) return true;
-  const latin = (sample.match(/[A-Za-zÀ-ɏ]/g) ?? []).length;
-  return latin / compact.length > 0.5;
-}
-
-/** Does a result already match what the caller wants? With no explicit
- *  preference we default to English, since the site's audience is English.
- *  English is verified by content, not just the language label. */
-function resultMatchesLang(result: TranscriptResult, preferredLang?: string): boolean {
-  if (preferredLang && !/^en/i.test(preferredLang)) {
-    return result.lang.toLowerCase().startsWith(preferredLang.toLowerCase());
-  }
-  return looksEnglish(result);
-}
-
-export async function fetchTranscript(
-  videoId: string,
-  preferredLang?: string,
-  debug = false
-): Promise<TranscriptResult> {
-  const errors: string[] = [];
-  const finish = (r: TranscriptResult, source: string): TranscriptResult => {
-    if (debug) r.debugTrace = [...errors, `WON: ${source} (lang=${r.lang})`];
-    return r;
-  };
-
-  // Language-aware upgrade attempts, ordered by how reliable each is from a
-  // datacenter IP. The transcript panel works server-side and can switch
-  // language; the player track download often fails from datacenter IPs.
-  const upgradeToPreferred = async (): Promise<TranscriptResult | null> => {
-    try {
-      const viaPanel = await fetchViaGetTranscript(videoId, preferredLang);
-      if (resultMatchesLang(viaPanel, preferredLang)) return viaPanel;
-      errors.push(`panel: got "${viaPanel.lang}"`);
-    } catch (e) {
-      errors.push(`panel: ${e instanceof Error ? e.message : "failed"}`);
-    }
-    try {
-      const viaTracks = await fetchViaPlayerTracks(videoId, preferredLang, errors);
-      if (viaTracks && resultMatchesLang(viaTracks, preferredLang)) return viaTracks;
-    } catch (e) {
-      errors.push(`tracks: ${e instanceof Error ? e.message : "failed"}`);
-    }
-    return null;
-  };
-
-  // Paid provider first, when configured: reliable from datacenter IPs, but it
-  // has no language parameter, so for multilingual videos it can hand back a
-  // translation (e.g. Arabic) instead of the original/English track.
-  if (process.env.TRANSCRIPT_API_KEY) {
-    try {
-      const apiResult = await fetchViaTranscriptApi(videoId);
-      if (resultMatchesLang(apiResult, preferredLang)) return finish(apiResult, "api");
-
-      // Wrong language (e.g. a translation): try to get the preferred language
-      // from YouTube directly. Only override if it actually matched.
-      errors.push(`api: returned "${apiResult.lang}", wanted ${preferredLang ?? "en"}`);
-      const upgraded = await upgradeToPreferred();
-      if (upgraded) return finish(upgraded, "upgrade");
-
-      // Couldn't get the preferred language anywhere — the API result (likely the
-      // video's only/original captions) is still the best we have.
-      return finish(apiResult, "api-fallback");
-    } catch (e) {
-      errors.push(`api: ${e instanceof Error ? e.message : "failed"}`);
-    }
-  }
-
-  // No key, or the paid provider failed entirely.
-  const direct = await upgradeToPreferred();
-  if (direct) return finish(direct, "direct");
-
-  // Last resort: return whatever the panel/tracks produced, even if not the
-  // preferred language, rather than failing outright.
-  try {
-    return finish(await fetchViaGetTranscript(videoId, preferredLang), "panel-any");
-  } catch (e) {
-    errors.push(`panel: ${e instanceof Error ? e.message : "failed"}`);
-  }
-  try {
-    const viaTracks = await fetchViaPlayerTracks(videoId, preferredLang, errors);
-    if (viaTracks) return finish(viaTracks, "tracks-any");
-  } catch (e) {
-    errors.push(`tracks: ${e instanceof Error ? e.message : "failed"}`);
-  }
-
-  throw new Error(
-    debug
-      ? errors.join(" | ")
-      : "Couldn't fetch the transcript for this video. It may have no captions, or YouTube is temporarily blocking requests. Please try again."
-  );
 }

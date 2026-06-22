@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconCheck,
   IconClock,
@@ -10,6 +10,46 @@ import {
   IconPlay,
   IconSparkles,
 } from "./Icons";
+
+// Languages offered for transcript translation (English name sent to the model).
+const TRANSLATE_LANGUAGES = [
+  "Arabic",
+  "Bengali",
+  "Chinese (Simplified)",
+  "Chinese (Traditional)",
+  "Czech",
+  "Danish",
+  "Dutch",
+  "Filipino",
+  "Finnish",
+  "French",
+  "German",
+  "Greek",
+  "Hebrew",
+  "Hindi",
+  "Hungarian",
+  "Indonesian",
+  "Italian",
+  "Japanese",
+  "Korean",
+  "Malay",
+  "Norwegian",
+  "Persian",
+  "Polish",
+  "Portuguese",
+  "Romanian",
+  "Russian",
+  "Spanish",
+  "Swedish",
+  "Thai",
+  "Turkish",
+  "Ukrainian",
+  "Vietnamese",
+];
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 interface Segment {
   start: number;
@@ -41,19 +81,19 @@ interface ChatMessage {
 
 const exampleVideos = [
   {
-    label: "TED talk",
-    title: "Master procrastination",
-    url: "https://www.youtube.com/watch?v=arj7oStGLkU",
+    label: "Productivity",
+    title: "Stop procrastinating",
+    url: "https://www.youtube.com/watch?v=km4pOGd_lHw",
   },
   {
-    label: "Leadership",
-    title: "Inspire action",
-    url: "https://www.youtube.com/watch?v=qp0HIF3SfI4",
+    label: "Mindset",
+    title: "Over-optimizing life",
+    url: "https://www.youtube.com/watch?v=-1Fhry-Mqks",
   },
   {
-    label: "Education",
-    title: "Imposter syndrome",
-    url: "https://www.youtube.com/watch?v=ZQUxL4Jm1Lo",
+    label: "Habits",
+    title: "Running every day",
+    url: "https://www.youtube.com/watch?v=e3tXybpViHY",
   },
 ];
 
@@ -138,6 +178,69 @@ export default function TranscriptTool({
   const [sumLoading, setSumLoading] = useState(false);
   const [sumError, setSumError] = useState("");
 
+  // Translation
+  const [translateLang, setTranslateLang] = useState("Russian");
+  const [translated, setTranslated] = useState<Segment[] | null>(null);
+  const [showTranslated, setShowTranslated] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState("");
+  const [translateTruncated, setTranslateTruncated] = useState(false);
+
+  // Search within the transcript
+  const [query, setQuery] = useState("");
+  const [matchIndex, setMatchIndex] = useState(0);
+  const activeMatchRef = useRef<HTMLElement | null>(null);
+
+  const shown = showTranslated && translated ? translated : data?.segments ?? [];
+
+  const matchCount = useMemo(() => {
+    const q = query.trim();
+    if (!q) return 0;
+    const re = new RegExp(escapeRegExp(q), "gi");
+    return shown.reduce((n, s) => n + (s.text.match(re)?.length ?? 0), 0);
+  }, [query, shown]);
+
+  useEffect(() => {
+    setMatchIndex(0);
+  }, [query, showTranslated]);
+
+  useEffect(() => {
+    activeMatchRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [matchIndex, query]);
+
+  function gotoMatch(dir: 1 | -1) {
+    if (matchCount === 0) return;
+    setMatchIndex((i) => (i + dir + matchCount) % matchCount);
+  }
+
+  // Wrap query matches in <mark>; `counter` tracks the global match number so the
+  // active one (selected via prev/next) gets the highlight + scroll ref.
+  function highlight(text: string, counter: { n: number }) {
+    const q = query.trim();
+    if (!q) return text;
+    const parts = text.split(new RegExp(`(${escapeRegExp(q)})`, "gi"));
+    return parts.map((part, i) => {
+      if (i % 2 === 0) return <span key={i}>{part}</span>;
+      const idx = counter.n++;
+      const active = idx === matchIndex;
+      return (
+        <mark
+          key={i}
+          className={active ? "hl active" : "hl"}
+          ref={
+            active
+              ? (el: HTMLElement | null) => {
+                  activeMatchRef.current = el;
+                }
+              : undefined
+          }
+        >
+          {part}
+        </mark>
+      );
+    });
+  }
+
   async function getTranscript(e: React.FormEvent) {
     e.preventDefault();
     if (!url.trim() || loading) return;
@@ -148,6 +251,11 @@ export default function TranscriptTool({
     setSumError("");
     setChat([]);
     setChatError("");
+    setTranslated(null);
+    setShowTranslated(false);
+    setTranslateError("");
+    setTranslateTruncated(false);
+    setQuery("");
     setTab("transcript");
     try {
       const res = await fetch("/api/transcript", {
@@ -187,9 +295,34 @@ export default function TranscriptTool({
     }
   }
 
+  async function translate() {
+    if (!data || translating) return;
+    setTranslating(true);
+    setTranslateError("");
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          language: translateLang,
+          segments: data.segments.map((s) => ({ start: s.start, text: s.text })),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Could not translate the transcript.");
+      const translations: string[] = json.translations ?? [];
+      setTranslated(data.segments.map((s, i) => ({ ...s, text: translations[i] ?? s.text })));
+      setTranslateTruncated(Boolean(json.truncated));
+      setShowTranslated(true);
+    } catch (e) {
+      setTranslateError(e instanceof Error ? e.message : "Could not translate the transcript.");
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   function plainText(withTs: boolean): string {
-    if (!data) return "";
-    return data.segments
+    return shown
       .map((s) => (withTs ? `[${fmtTime(s.start)}] ${s.text}` : s.text))
       .join("\n");
   }
@@ -202,7 +335,7 @@ export default function TranscriptTool({
 
   function exportSrt() {
     if (!data) return;
-    const srt = data.segments
+    const srt = shown
       .map((s, i) => `${i + 1}\n${srtTime(s.start)} --> ${srtTime(s.start + s.dur)}\n${s.text}\n`)
       .join("\n");
     download(`${data.videoId}.srt`, srt);
@@ -212,7 +345,7 @@ export default function TranscriptTool({
     if (!data) return;
     const vtt =
       "WEBVTT\n\n" +
-      data.segments
+      shown
         .map((s) => `${vttTime(s.start)} --> ${vttTime(s.start + s.dur)}\n${s.text}\n`)
         .join("\n");
     download(`${data.videoId}.vtt`, vtt);
@@ -344,22 +477,105 @@ export default function TranscriptTool({
 
           {tab === "transcript" && (
             <div className="panel">
-              <div className="tr-scroll">
-                {data.segments.map((s, i) => (
-                  <div className="tr-row" key={i}>
-                    {showTs && (
-                      <a
-                        className="tr-time"
-                        href={`https://www.youtube.com/watch?v=${data.videoId}&t=${Math.floor(s.start)}s`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+              <div className="tr-toolbar">
+                <div className="tr-search">
+                  <input
+                    type="text"
+                    placeholder="Search the transcript…"
+                    aria-label="Search the transcript"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        gotoMatch(e.shiftKey ? -1 : 1);
+                      }
+                    }}
+                  />
+                  {query.trim() && (
+                    <span className="tr-search-nav">
+                      <span className="tr-search-count">
+                        {matchCount ? `${matchIndex + 1} / ${matchCount}` : "0 / 0"}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Previous match"
+                        disabled={!matchCount}
+                        onClick={() => gotoMatch(-1)}
                       >
-                        {fmtTime(s.start)}
-                      </a>
-                    )}
-                    <span className="tr-text">{s.text}</span>
-                  </div>
-                ))}
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Next match"
+                        disabled={!matchCount}
+                        onClick={() => gotoMatch(1)}
+                      >
+                        ↓
+                      </button>
+                    </span>
+                  )}
+                </div>
+
+                <div className="tr-translate">
+                  <select
+                    aria-label="Translate transcript to"
+                    value={translateLang}
+                    onChange={(e) => {
+                      setTranslateLang(e.target.value);
+                      setTranslated(null);
+                      setShowTranslated(false);
+                    }}
+                  >
+                    {TRANSLATE_LANGUAGES.map((l) => (
+                      <option key={l} value={l}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="chip-btn" onClick={translate} disabled={translating}>
+                    {translating ? <IconLoader size={15} /> : <IconSparkles size={15} />}
+                    {translating ? "Translating…" : "Translate"}
+                  </button>
+                  {translated && (
+                    <button
+                      className={`chip-btn ${showTranslated ? "active" : ""}`}
+                      onClick={() => setShowTranslated((v) => !v)}
+                    >
+                      {showTranslated ? "Show original" : `Show ${translateLang}`}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {translateError && (
+                <div className="err-box" style={{ margin: "0 0 12px" }}>{translateError}</div>
+              )}
+              {translateTruncated && showTranslated && (
+                <div className="tr-note">
+                  This transcript is long, so only the first part was translated.
+                </div>
+              )}
+
+              <div className="tr-scroll">
+                {(() => {
+                  const counter = { n: 0 };
+                  return shown.map((s, i) => (
+                    <div className="tr-row" key={i}>
+                      {showTs && (
+                        <a
+                          className="tr-time"
+                          href={`https://www.youtube.com/watch?v=${data.videoId}&t=${Math.floor(s.start)}s`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {fmtTime(s.start)}
+                        </a>
+                      )}
+                      <span className="tr-text">{highlight(s.text, counter)}</span>
+                    </div>
+                  ));
+                })()}
               </div>
               <div className="panel-actions">
                 <button className="chip-btn" onClick={copyTranscript}>
