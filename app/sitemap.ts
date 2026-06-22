@@ -12,6 +12,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${BASE}/translate-youtube-transcript`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
     { url: `${BASE}/guides`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     {
       url: `${BASE}/guides/how-to-get-youtube-transcript`,

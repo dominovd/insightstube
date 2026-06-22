@@ -196,6 +196,10 @@ export default function Home() {
             </span>
             <span>
               <IconCheck size={15} />
+              Transcript translation
+            </span>
+            <span>
+              <IconCheck size={15} />
               No signup
             </span>
           </div>
@@ -249,6 +253,8 @@ export default function Home() {
             <span><IconCheck size={15} /> TXT, SRT and VTT downloads</span>
             <span><IconCheck size={15} /> AI summary and key takeaways</span>
             <span><IconCheck size={15} /> Timestamped insights</span>
+            <span><IconCheck size={15} /> Transcript translation with timestamps</span>
+            <span><IconCheck size={15} /> Search inside the transcript</span>
             <span><IconCheck size={15} /> No signup required</span>
           </div>
         </div>
@@ -298,6 +304,16 @@ export default function Home() {
               <span>Download subtitles</span>
               <span>Not built in</span>
               <span>TXT, SRT and VTT export</span>
+            </div>
+            <div className="seo-matrix-row">
+              <span>Search transcript</span>
+              <span>Use browser search manually</span>
+              <span>Search inside the transcript</span>
+            </div>
+            <div className="seo-matrix-row">
+              <span>Translate transcript</span>
+              <span>Copy into another translation tool</span>
+              <span>Translate while keeping timestamps</span>
             </div>
             <div className="seo-matrix-row">
               <span>AI summary</span>
@@ -373,8 +389,7 @@ export default function Home() {
                 Open tool <IconArrowRight size={13} />
               </span>
             </a>
-            <div className="tool-card">
-              <span className="soon">Soon</span>
+            <a className="tool-card" href="/translate-youtube-transcript">
               <div className="tool-ic ic-amber">
                 <IconGlobe size={22} />
               </div>
@@ -383,7 +398,10 @@ export default function Home() {
                 Translate transcripts, subtitles and insights into 45+ languages while
                 keeping timestamps.
               </p>
-            </div>
+              <span className="go">
+                Translate transcript <IconArrowRight size={13} />
+              </span>
+            </a>
           </div>
         </div>
       </section>
