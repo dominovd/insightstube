@@ -343,14 +343,14 @@ export default function TranscriptTool({
 
   const noteStarts = useMemo(() => new Set(notes.map((n) => n.start)), [notes]);
 
-  function addNote(seg: Segment) {
-    setNotes((prev) =>
-      prev.some((n) => n.start === seg.start && n.text === seg.text)
-        ? prev
-        : [...prev, { id: `${seg.start}-${Date.now()}`, start: seg.start, text: seg.text }].sort(
-            (a, b) => a.start - b.start
-          )
-    );
+  function toggleNote(seg: Segment) {
+    setNotes((prev) => {
+      const existing = prev.find((n) => n.start === seg.start && n.text === seg.text);
+      if (existing) return prev.filter((n) => n.id !== existing.id);
+      return [...prev, { id: `${seg.start}-${Date.now()}`, start: seg.start, text: seg.text }].sort(
+        (a, b) => a.start - b.start
+      );
+    });
   }
 
   function removeNote(id: string) {
@@ -788,9 +788,9 @@ export default function TranscriptTool({
                       <button
                         type="button"
                         className={`tr-add ${noteStarts.has(s.start) ? "added" : ""}`}
-                        onClick={() => addNote(s)}
-                        title={noteStarts.has(s.start) ? "Saved to Notes" : "Add to Notes"}
-                        aria-label="Add to notes"
+                        onClick={() => toggleNote(s)}
+                        title={noteStarts.has(s.start) ? "Remove from Notes" : "Add to Notes"}
+                        aria-label={noteStarts.has(s.start) ? "Remove from notes" : "Add to notes"}
                       >
                         {noteStarts.has(s.start) ? <IconCheck size={14} /> : "+"}
                       </button>

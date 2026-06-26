@@ -160,6 +160,7 @@ mark.hl.active{background:#f59e0b;color:#fff}
 .tr-row:hover .tr-add{opacity:1}
 .tr-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .tr-add.added{opacity:1;border-color:#16a34a;color:#16a34a;background:#f0fdf4}
+.tr-add.added:hover{border-color:var(--red);color:var(--red);background:#fef2f2}
 @media(hover:none){.tr-add{opacity:.55}}
 
 /* notes panel */
