@@ -116,22 +116,16 @@ function tsToSeconds(ts: string): number {
   return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
 }
 
-/** Renders text with [mm:ss] timestamps as links to the video moment. */
-function TimestampedText({ text, videoId }: { text: string; videoId: string }) {
+/** Renders text with [mm:ss] timestamps as buttons that seek the embedded player. */
+function TimestampedText({ text, onSeek }: { text: string; onSeek: (sec: number) => void }) {
   const parts = text.split(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g);
   return (
     <>
       {parts.map((part, i) =>
         i % 2 === 1 ? (
-          <a
-            key={i}
-            className="ts"
-            href={`https://www.youtube.com/watch?v=${videoId}&t=${tsToSeconds(part)}s`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <button key={i} type="button" className="ts" onClick={() => onSeek(tsToSeconds(part))}>
             {part}
-          </a>
+          </button>
         ) : (
           <span key={i}>{part}</span>
         )
@@ -204,6 +198,17 @@ export default function TranscriptTool({
   const [query, setQuery] = useState("");
   const [matchIndex, setMatchIndex] = useState(0);
   const activeMatchRef = useRef<HTMLElement | null>(null);
+
+  // Embedded YouTube player: seek to a moment without leaving the site.
+  const playerRef = useRef<HTMLIFrameElement | null>(null);
+  function seekTo(seconds: number) {
+    const win = playerRef.current?.contentWindow;
+    if (!win) return;
+    const t = Math.max(0, Math.floor(seconds));
+    win.postMessage(JSON.stringify({ event: "command", func: "seekTo", args: [t, true] }), "*");
+    win.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+    playerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
 
   const shown = showTranslated && translated ? translated : data?.segments ?? [];
 
@@ -462,15 +467,18 @@ export default function TranscriptTool({
 
       {data && (
         <div className="demo">
+          <div className="demo-player">
+            <iframe
+              key={data.videoId}
+              ref={playerRef}
+              src={`https://www.youtube-nocookie.com/embed/${data.videoId}?enablejsapi=1&playsinline=1&rel=0`}
+              title={data.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+
           <div className="demo-head">
-            <div className="demo-thumb">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://i.ytimg.com/vi/${data.videoId}/mqdefault.jpg`}
-                alt=""
-                loading="lazy"
-              />
-            </div>
             <div>
               <div className="demo-title">{data.title}</div>
               <div className="demo-sub">
@@ -594,14 +602,14 @@ export default function TranscriptTool({
                   return shown.map((s, i) => (
                     <div className="tr-row" key={i}>
                       {showTs && (
-                        <a
+                        <button
+                          type="button"
                           className="tr-time"
-                          href={`https://www.youtube.com/watch?v=${data.videoId}&t=${Math.floor(s.start)}s`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          onClick={() => seekTo(s.start)}
+                          title="Play this moment"
                         >
                           {fmtTime(s.start)}
-                        </a>
+                        </button>
                       )}
                       <span className="tr-text">{highlight(s.text, counter)}</span>
                     </div>
@@ -720,7 +728,7 @@ export default function TranscriptTool({
                 {chat.map((m, i) => (
                   <div key={i} className={`msg ${m.role === "user" ? "me" : "ai"}`}>
                     {m.role === "assistant" ? (
-                      <TimestampedText text={m.content} videoId={data.videoId} />
+                      <TimestampedText text={m.content} onSeek={seekTo} />
                     ) : (
                       m.content
                     )}
