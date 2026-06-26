@@ -104,7 +104,7 @@ h1 .grad{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit
     margin-left:calc(50% - min(640px,48vw));
     margin-right:calc(50% - min(640px,48vw));
     display:grid;
-    grid-template-columns:minmax(0,460px) minmax(0,1fr);
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
     align-items:start;
   }
   .demo-left{position:sticky;top:80px;align-self:start;padding:20px;border-right:1px solid var(--line)}
