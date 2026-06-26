@@ -222,7 +222,18 @@ mark.hl.active{background:#f59e0b;color:#fff}
 .topic-intro{margin-top:16px;font-size:16px;color:var(--ink-2);max-width:720px}
 .topic-updated{margin-top:12px;font-size:13px;color:var(--ink-3)}
 .topic-tool{margin-bottom:36px}
+.topic-needs{margin-bottom:32px}
+.topic-needs h2{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:12px}
+.needs-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.needs-table{width:100%;border-collapse:collapse;font-size:14px}
+.needs-table th,.needs-table td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.needs-table tr:last-child td{border-bottom:0}
+.needs-table th{background:#f4f7fb;font-weight:600;color:var(--ink-2);font-size:12.5px}
+.needs-table td:nth-child(2){font-weight:600;color:var(--ink)}
+.needs-table td:first-child{white-space:nowrap}
 .topic-channels{display:flex;flex-direction:column;gap:16px}
+.ch-skip{margin-top:8px;font-size:13px;color:var(--ink-3)}
+.topic-method-note{margin-top:12px;font-size:13.5px;color:var(--ink-3)}
 .ch-card{border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm);overflow:hidden}
 .ch-main{padding:18px 20px}
 .ch-name{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.3px}

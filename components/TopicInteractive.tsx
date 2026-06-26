@@ -42,9 +42,9 @@ function ChannelCard({
   channel: ChannelWithVideos;
   onPlay: (videoId: string) => void;
 }) {
-  const [mode, setMode] = useState<"latest" | "best">("latest");
   const hasBest = channel.best.length > 0;
   const hasLatest = channel.latest.length > 0;
+  const [mode, setMode] = useState<"latest" | "best">(hasBest ? "best" : "latest");
   const videos = mode === "best" ? channel.best : channel.latest;
 
   return (
@@ -64,6 +64,7 @@ function ChannelCard({
             <span className="ch-chip">{channel.format}</span>
           </div>
           <p className="ch-best">{channel.bestFor}</p>
+          <p className="ch-skip">{channel.skip}</p>
         </div>
       </div>
 

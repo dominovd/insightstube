@@ -26,12 +26,18 @@ export async function generateMetadata({
   return {
     title: topic.metaTitle,
     description: topic.metaDescription,
+    keywords: topic.keywords,
     alternates: { canonical: url },
     openGraph: {
       title: topic.metaTitle,
       description: topic.metaDescription,
       url,
       type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: topic.metaTitle,
+      description: topic.metaDescription,
     },
   };
 }
@@ -99,6 +105,15 @@ export default async function BestChannelsPage({
           acceptedAnswer: { "@type": "Answer", text: f.a },
         })),
       },
+      {
+        "@type": "Article",
+        headline: topic.h1,
+        description: topic.metaDescription,
+        url: pageUrl,
+        dateModified: new Date().toISOString(),
+        author: { "@type": "Organization", name: "InsightsTube", url: BASE },
+        publisher: { "@id": `${BASE}/#org` },
+      },
     ],
   };
 
@@ -117,11 +132,40 @@ export default async function BestChannelsPage({
           <p className="topic-updated">Updated {updated}</p>
         </header>
 
+        <section className="topic-needs" aria-label="Which channel should I watch?">
+          <h2>Which channel should I watch?</h2>
+          <div className="needs-tablewrap">
+            <table className="needs-table">
+              <thead>
+                <tr>
+                  <th>If you are…</th>
+                  <th>Start with</th>
+                  <th>Why</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topic.needs.map((n, i) => (
+                  <tr key={i}>
+                    <td>{n.situation}</td>
+                    <td>{n.channels}</td>
+                    <td>{n.why}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <TopicInteractive channels={channels} />
 
         <section className="topic-method">
           <h2>How we picked these channels</h2>
           <p>{topic.methodology}</p>
+          <p className="topic-method-note">
+            Each channel&apos;s top and latest videos refresh automatically every week. The channel
+            selection itself is reviewed and updated by hand, most recently in {topic.lastReviewed}.
+            We drop channels that go inactive or drift away from startup topics.
+          </p>
         </section>
 
         <section className="topic-faq">
