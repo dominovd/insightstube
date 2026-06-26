@@ -4,6 +4,8 @@ export interface TopicChannel {
   bestFor: string;
   level: string;
   format: string;
+  // Optional hand-picked "best" videos; if set, they override the auto top-by-views list.
+  best?: { videoId: string; title: string }[];
 }
 
 export interface TopicFaq {

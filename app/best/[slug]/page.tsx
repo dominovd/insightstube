@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
-import { getTopic, topics, type TopicChannel } from "@/lib/topics";
-import { getLatestVideos, type ChannelVideo } from "@/lib/channel";
+import TopicInteractive from "@/components/TopicInteractive";
+import { getTopic, topics } from "@/lib/topics";
+import { getLatestVideos, getTopVideos, type ChannelVideo } from "@/lib/channel";
 
-export const revalidate = 86400; // refresh latest videos daily
+const BASE = "https://insightstube.com";
+
+export const revalidate = 604800; // refresh latest videos weekly
 
 export function generateStaticParams() {
   return Object.keys(topics).map((slug) => ({ slug }));
@@ -34,13 +36,6 @@ export async function generateMetadata({
   };
 }
 
-function fmtDate(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-}
-
 export default async function BestChannelsPage({
   params,
 }: {
@@ -51,10 +46,20 @@ export default async function BestChannelsPage({
   if (!topic) notFound();
 
   const channels = await Promise.all(
-    topic.channels.map(async (c) => ({
-      ...c,
-      videos: await getLatestVideos(c.handle),
-    }))
+    topic.channels.map(async (c) => {
+      const [latest, autoBest] = await Promise.all([
+        getLatestVideos(c.handle),
+        c.best?.length ? Promise.resolve<ChannelVideo[]>([]) : getTopVideos(c.handle),
+      ]);
+      const best: ChannelVideo[] = c.best?.length
+        ? c.best.map((b) => ({
+            videoId: b.videoId,
+            title: b.title,
+            thumbnail: `https://i.ytimg.com/vi/${b.videoId}/mqdefault.jpg`,
+          }))
+        : autoBest;
+      return { ...c, latest, best };
+    })
   );
 
   const updated = new Date().toLocaleDateString("en-US", {
@@ -63,12 +68,22 @@ export default async function BestChannelsPage({
     day: "numeric",
   });
 
+  const pageUrl = `${BASE}/best/${topic.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: BASE },
+          { "@type": "ListItem", position: 2, name: topic.h1, item: pageUrl },
+        ],
+      },
+      {
         "@type": "ItemList",
         name: topic.h1,
+        url: pageUrl,
+        numberOfItems: topic.channels.length,
         itemListElement: topic.channels.map((c, i) => ({
           "@type": "ListItem",
           position: i + 1,
@@ -102,11 +117,7 @@ export default async function BestChannelsPage({
           <p className="topic-updated">Updated {updated}</p>
         </header>
 
-        <section className="topic-channels">
-          {channels.map((c) => (
-            <ChannelCard key={c.handle} channel={c} />
-          ))}
-        </section>
+        <TopicInteractive channels={channels} />
 
         <section className="topic-method">
           <h2>How we picked these channels</h2>
@@ -116,58 +127,15 @@ export default async function BestChannelsPage({
         <section className="topic-faq">
           <h2>Frequently asked questions</h2>
           {topic.faq.map((f, i) => (
-            <div className="topic-faq-item" key={i}>
-              <h3>{f.q}</h3>
+            <details className="topic-faq-item" key={i}>
+              <summary>{f.q}</summary>
               <p>{f.a}</p>
-            </div>
+            </details>
           ))}
         </section>
       </main>
 
       <SiteFooter />
     </>
-  );
-}
-
-function ChannelCard({ channel }: { channel: TopicChannel & { videos: ChannelVideo[] } }) {
-  return (
-    <article className="ch-card">
-      <div className="ch-main">
-        <div className="ch-meta">
-          <a
-            className="ch-name"
-            href={`https://www.youtube.com/@${channel.handle}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {channel.name}
-          </a>
-          <div className="ch-chips">
-            <span className="ch-chip">{channel.level}</span>
-            <span className="ch-chip">{channel.format}</span>
-          </div>
-          <p className="ch-best">{channel.bestFor}</p>
-        </div>
-      </div>
-
-      {channel.videos.length > 0 && (
-        <div className="ch-videos">
-          <div className="ch-videos-label">Latest videos</div>
-          {channel.videos.map((v) => (
-            <div className="ch-video" key={v.videoId}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={v.thumbnail} alt="" loading="lazy" width={120} height={68} />
-              <div className="ch-video-body">
-                <div className="ch-video-title">{v.title}</div>
-                {v.published && <div className="ch-video-date">{fmtDate(v.published)}</div>}
-                <Link className="ch-video-cta" href={`/?v=${v.videoId}`}>
-                  Get transcript &amp; insights →
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </article>
   );
 }
