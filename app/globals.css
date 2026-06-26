@@ -155,6 +155,23 @@ button.ts{border:0;cursor:pointer;font-family:inherit}
 mark.hl{background:#fef08a;color:inherit;border-radius:3px;padding:0 1px}
 mark.hl.active{background:#f59e0b;color:#fff}
 
+/* add-to-notes button on transcript rows */
+.tr-add{margin-left:auto;flex-shrink:0;width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;opacity:0;transition:.15s}
+.tr-row:hover .tr-add{opacity:1}
+.tr-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.tr-add.added{opacity:1;border-color:#16a34a;color:#16a34a;background:#f0fdf4}
+@media(hover:none){.tr-add{opacity:.55}}
+
+/* notes panel */
+.notes-list{display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow-y:auto;padding-right:6px}
+.note-item{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fcfdfe}
+.note-body{flex:1;min-width:0}
+.note-text{color:var(--ink-2)}
+.note-comment{margin-top:6px;width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 10px;outline:none}
+.note-comment:focus{border-color:var(--accent)}
+.note-del{flex-shrink:0;border:0;background:none;color:var(--ink-3);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+.note-del:hover{color:var(--red)}
+
 /* example question chips */
 .q-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:34px;max-width:760px;margin-inline:auto}
 .q-chip{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:9px 18px;font-size:13.5px;font-weight:600;color:var(--ink-2);box-shadow:var(--shadow-sm)}

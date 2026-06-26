@@ -99,6 +99,13 @@ interface ChatMessage {
   content: string;
 }
 
+interface Note {
+  id: string;
+  start: number;
+  text: string;
+  comment?: string;
+}
+
 const exampleVideos = [
   {
     label: "Productivity",
@@ -195,7 +202,9 @@ export default function TranscriptTool({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<TranscriptData | null>(null);
-  const [tab, setTab] = useState<"transcript" | "summary" | "takeaways" | "chat">("transcript");
+  const [tab, setTab] = useState<"transcript" | "summary" | "takeaways" | "chat" | "notes">(
+    "transcript"
+  );
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -308,6 +317,58 @@ export default function TranscriptTool({
       activeRowRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [activeSeg, tab]);
+
+  // Notes: saved transcript snippets, persisted per video in localStorage (no signup).
+  const [notes, setNotes] = useState<Note[]>([]);
+  const notesKey = data ? `insightstube:notes:${data.videoId}` : null;
+
+  useEffect(() => {
+    if (!notesKey) return;
+    try {
+      const raw = localStorage.getItem(notesKey);
+      setNotes(raw ? (JSON.parse(raw) as Note[]) : []);
+    } catch {
+      setNotes([]);
+    }
+  }, [notesKey]);
+
+  useEffect(() => {
+    if (!notesKey) return;
+    try {
+      localStorage.setItem(notesKey, JSON.stringify(notes));
+    } catch {
+      /* storage full or unavailable */
+    }
+  }, [notes, notesKey]);
+
+  const noteStarts = useMemo(() => new Set(notes.map((n) => n.start)), [notes]);
+
+  function addNote(seg: Segment) {
+    setNotes((prev) =>
+      prev.some((n) => n.start === seg.start && n.text === seg.text)
+        ? prev
+        : [...prev, { id: `${seg.start}-${Date.now()}`, start: seg.start, text: seg.text }].sort(
+            (a, b) => a.start - b.start
+          )
+    );
+  }
+
+  function removeNote(id: string) {
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+  }
+
+  function setNoteComment(id: string, comment: string) {
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, comment } : n)));
+  }
+
+  function notesMarkdown(): string {
+    if (!data) return "";
+    const lines = notes.map((n) => {
+      const base = `- [${fmtTime(n.start)}] ${n.text}`;
+      return n.comment?.trim() ? `${base}\n  > ${n.comment.trim()}` : base;
+    });
+    return `# Notes — ${data.title}\n\nhttps://www.youtube.com/watch?v=${data.videoId}\n\n${lines.join("\n")}\n`;
+  }
 
   const matchCount = useMemo(() => {
     const q = query.trim();
@@ -614,6 +675,12 @@ export default function TranscriptTool({
             >
               Chat
             </button>
+            <button
+              className={`tab ${tab === "notes" ? "active" : ""}`}
+              onClick={() => selectTab("notes")}
+            >
+              Notes{notes.length > 0 ? ` (${notes.length})` : ""}
+            </button>
           </div>
 
           {tab === "transcript" && (
@@ -718,6 +785,15 @@ export default function TranscriptTool({
                         </button>
                       )}
                       <span className="tr-text">{highlight(s.text, counter)}</span>
+                      <button
+                        type="button"
+                        className={`tr-add ${noteStarts.has(s.start) ? "added" : ""}`}
+                        onClick={() => addNote(s)}
+                        title={noteStarts.has(s.start) ? "Saved to Notes" : "Add to Notes"}
+                        aria-label="Add to notes"
+                      >
+                        {noteStarts.has(s.start) ? <IconCheck size={14} /> : "+"}
+                      </button>
                     </div>
                   ));
                 })()}
@@ -859,6 +935,67 @@ export default function TranscriptTool({
                   Send
                 </button>
               </form>
+            </div>
+          )}
+          {tab === "notes" && (
+            <div className="panel">
+              {notes.length === 0 ? (
+                <div className="panel-empty">
+                  Hover any line in the transcript and click + to save it here.
+                  <br />
+                  Your notes stay in this browser, no sign-up needed.
+                </div>
+              ) : (
+                <>
+                  <div className="notes-list">
+                    {notes.map((n) => (
+                      <div className="note-item" key={n.id}>
+                        <button
+                          type="button"
+                          className="tr-time"
+                          onClick={() => seekTo(n.start)}
+                          title="Play this moment"
+                        >
+                          {fmtTime(n.start)}
+                        </button>
+                        <div className="note-body">
+                          <div className="note-text">{n.text}</div>
+                          <input
+                            className="note-comment"
+                            placeholder="Add a comment…"
+                            value={n.comment ?? ""}
+                            onChange={(e) => setNoteComment(n.id, e.target.value)}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="note-del"
+                          onClick={() => removeNote(n.id)}
+                          aria-label="Remove note"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="panel-actions">
+                    <button
+                      className="chip-btn"
+                      onClick={() => navigator.clipboard.writeText(notesMarkdown())}
+                    >
+                      <IconCopy size={15} /> Copy all
+                    </button>
+                    <button
+                      className="chip-btn"
+                      onClick={() =>
+                        download(`${data.videoId}-notes.md`, notesMarkdown(), "text/markdown")
+                      }
+                    >
+                      <IconDownload size={15} /> Export .md
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
           </div>{/* demo-right */}
