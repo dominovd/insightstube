@@ -336,10 +336,14 @@ export default function TranscriptTool({
   defaultTab = "transcript",
   ctaLabel = "Get transcript & insights →",
   showExamples = true,
+  pendingUrl,
+  pendingNonce,
 }: {
   defaultTab?: "transcript" | "summary" | "takeaways" | "chat";
   ctaLabel?: string;
   showExamples?: boolean;
+  pendingUrl?: string;
+  pendingNonce?: number;
 } = {}) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -644,6 +648,15 @@ export default function TranscriptTool({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load a video requested by a parent (e.g. a landing page video button),
+  // keeping the user on the same page instead of navigating away.
+  useEffect(() => {
+    if (!pendingNonce || !pendingUrl) return;
+    setUrl(pendingUrl);
+    runTranscript(pendingUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingNonce]);
 
   async function getSummary() {
     if (!data || sumLoading || summary) return;
