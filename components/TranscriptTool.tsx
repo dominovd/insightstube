@@ -113,6 +113,22 @@ const MENTION_GROUPS: { type: string; label: string }[] = [
   { type: "other", label: "Other" },
 ];
 
+// Use-case summary templates (server holds the matching prompts).
+const TEMPLATES = [
+  { id: "actions", label: "Key insights & actions" },
+  { id: "study", label: "Study notes, flashcards & quiz" },
+  { id: "language", label: "Language notes & vocabulary" },
+  { id: "recipe", label: "Recipe card" },
+  { id: "workout", label: "Workout program" },
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TplSection = any;
+interface TemplateResult {
+  title: string;
+  sections: TplSection[];
+}
+
 interface Note {
   id: string;
   start: number;
@@ -175,6 +191,119 @@ function TimestampedText({ text, onSeek }: { text: string; onSeek: (sec: number)
   );
 }
 
+function Flashcard({ front, back }: { front: string; back: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button type="button" className={`flashcard ${open ? "open" : ""}`} onClick={() => setOpen((o) => !o)}>
+      <span className="fc-front">{front}</span>
+      {open ? <span className="fc-back">{back}</span> : <span className="fc-hint">Show answer</span>}
+    </button>
+  );
+}
+
+function QuizItem({ q, options, answer }: { q: string; options: string[]; answer: number }) {
+  const [picked, setPicked] = useState<number | null>(null);
+  return (
+    <div className="quiz-item">
+      <div className="quiz-q">{q}</div>
+      <div className="quiz-opts">
+        {options.map((o, i) => {
+          const state = picked === null ? "" : i === answer ? "correct" : i === picked ? "wrong" : "";
+          return (
+            <button
+              key={i}
+              type="button"
+              className={`quiz-opt ${state}`}
+              disabled={picked !== null}
+              onClick={() => setPicked(i)}
+            >
+              {o}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function TemplateSection({ s }: { s: any }) {
+  switch (s?.type) {
+    case "text":
+      return <p className="tpl-text">{s.text}</p>;
+    case "list":
+      return (
+        <ul className="tpl-list">
+          {(s.items ?? []).map((x: string, i: number) => (
+            <li key={i}>{x}</li>
+          ))}
+        </ul>
+      );
+    case "ordered":
+      return (
+        <ol className="tpl-list">
+          {(s.items ?? []).map((x: string, i: number) => (
+            <li key={i}>{x}</li>
+          ))}
+        </ol>
+      );
+    case "pairs":
+      return (
+        <dl className="tpl-pairs">
+          {(s.items ?? []).map((p: { term: string; def: string }, i: number) => (
+            <div key={i}>
+              <dt>{p.term}</dt>
+              <dd>{p.def}</dd>
+            </div>
+          ))}
+        </dl>
+      );
+    case "table":
+      return (
+        <div className="tpl-tablewrap">
+          <table className="tpl-table">
+            <thead>
+              <tr>
+                {(s.columns ?? []).map((c: string, i: number) => (
+                  <th key={i}>{c}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(s.rows ?? []).map((row: string[], i: number) => (
+                <tr key={i}>
+                  {row.map((cell, j) => (
+                    <td key={j}>{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    case "cards":
+      return (
+        <div className="tpl-cards">
+          {(s.items ?? []).map((c: { front: string; back: string }, i: number) => (
+            <Flashcard key={i} front={c.front} back={c.back} />
+          ))}
+        </div>
+      );
+    case "quiz":
+      return (
+        <div className="tpl-quiz">
+          {(s.items ?? []).map(
+            (qi: { q: string; options: string[]; answer: number }, i: number) => (
+              <QuizItem key={i} q={qi.q} options={qi.options ?? []} answer={qi.answer ?? 0} />
+            )
+          )}
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+
 function fmtTime(sec: number): string {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
@@ -217,7 +346,7 @@ export default function TranscriptTool({
   const [error, setError] = useState("");
   const [data, setData] = useState<TranscriptData | null>(null);
   const [tab, setTab] = useState<
-    "transcript" | "summary" | "takeaways" | "chat" | "notes" | "insights"
+    "transcript" | "summary" | "takeaways" | "chat" | "notes" | "insights" | "templates"
   >("transcript");
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -233,6 +362,12 @@ export default function TranscriptTool({
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState("");
+
+  // Use-case templates
+  const [templateId, setTemplateId] = useState(TEMPLATES[0].id);
+  const [templateResult, setTemplateResult] = useState<TemplateResult | null>(null);
+  const [templateLoading, setTemplateLoading] = useState(false);
+  const [templateError, setTemplateError] = useState("");
 
   // Translation
   const [translateLang, setTranslateLang] = useState("Russian");
@@ -447,6 +582,8 @@ export default function TranscriptTool({
     setSumError("");
     setInsights(null);
     setInsightsError("");
+    setTemplateResult(null);
+    setTemplateError("");
     setChat([]);
     setChatError("");
     setTranslated(null);
@@ -530,6 +667,62 @@ export default function TranscriptTool({
     } finally {
       setInsightsLoading(false);
     }
+  }
+
+  async function generateTemplate() {
+    if (!data || templateLoading) return;
+    setTemplateLoading(true);
+    setTemplateError("");
+    setTemplateResult(null);
+    try {
+      const text = data.segments.map((s) => `[${fmtTime(s.start)}] ${s.text}`).join("\n");
+      const res = await fetch("/api/template", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: data.title, transcript: text, template: templateId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Could not generate this template.");
+      setTemplateResult(json);
+    } catch (e) {
+      setTemplateError(e instanceof Error ? e.message : "Could not generate this template.");
+    } finally {
+      setTemplateLoading(false);
+    }
+  }
+
+  function templateMarkdown(): string {
+    if (!templateResult) return "";
+    const lines: string[] = [];
+    if (templateResult.title) lines.push(`# ${templateResult.title}`, "");
+    for (const s of templateResult.sections) {
+      if (s?.heading) lines.push(`## ${s.heading}`);
+      if (s?.type === "text") lines.push(s.text ?? "");
+      else if (s?.type === "list") (s.items ?? []).forEach((x: string) => lines.push(`- ${x}`));
+      else if (s?.type === "ordered")
+        (s.items ?? []).forEach((x: string, i: number) => lines.push(`${i + 1}. ${x}`));
+      else if (s?.type === "pairs")
+        (s.items ?? []).forEach((p: { term: string; def: string }) =>
+          lines.push(`- **${p.term}** — ${p.def}`)
+        );
+      else if (s?.type === "table") {
+        lines.push(`| ${(s.columns ?? []).join(" | ")} |`);
+        lines.push(`| ${(s.columns ?? []).map(() => "---").join(" | ")} |`);
+        (s.rows ?? []).forEach((r: string[]) => lines.push(`| ${r.join(" | ")} |`));
+      } else if (s?.type === "cards")
+        (s.items ?? []).forEach((c: { front: string; back: string }) =>
+          lines.push(`- ${c.front} :: ${c.back}`)
+        );
+      else if (s?.type === "quiz")
+        (s.items ?? []).forEach((qi: { q: string; options: string[]; answer: number }, i: number) => {
+          lines.push(`${i + 1}. ${qi.q}`);
+          (qi.options ?? []).forEach((o: string, j: number) =>
+            lines.push(`   ${j === qi.answer ? "✓" : "-"} ${o}`)
+          );
+        });
+      lines.push("");
+    }
+    return lines.join("\n");
   }
 
   async function translate() {
@@ -717,6 +910,12 @@ export default function TranscriptTool({
               onClick={() => selectTab("insights")}
             >
               Insights
+            </button>
+            <button
+              className={`tab ${tab === "templates" ? "active" : ""}`}
+              onClick={() => selectTab("templates")}
+            >
+              Templates
             </button>
             <button
               className={`tab ${tab === "chat" ? "active" : ""}`}
@@ -984,6 +1183,71 @@ export default function TranscriptTool({
                   Send
                 </button>
               </form>
+            </div>
+          )}
+          {tab === "templates" && (
+            <div className="panel">
+              <div className="tpl-bar">
+                <select
+                  aria-label="Template"
+                  value={templateId}
+                  onChange={(e) => {
+                    setTemplateId(e.target.value);
+                    setTemplateResult(null);
+                    setTemplateError("");
+                  }}
+                >
+                  {TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <button className="chip-btn" onClick={generateTemplate} disabled={templateLoading}>
+                  {templateLoading ? <IconLoader size={15} /> : <IconSparkles size={15} />}
+                  {templateLoading ? "Generating…" : "Generate"}
+                </button>
+              </div>
+
+              {templateError && <div className="err-box">{templateError}</div>}
+              {!templateResult && !templateLoading && !templateError && (
+                <div className="panel-empty">
+                  Pick a format and turn this video into it: a workout program, recipe card, study
+                  pack, and more.
+                </div>
+              )}
+              {templateLoading && (
+                <div className="panel-empty">
+                  <IconLoader size={22} /> <br />
+                  Building it from the video…
+                </div>
+              )}
+              {templateResult && (
+                <div className="tpl-result">
+                  {templateResult.sections.map((s: TplSection, i: number) => (
+                    <div className="tpl-section" key={i}>
+                      {s?.heading && <h4>{s.heading}</h4>}
+                      <TemplateSection s={s} />
+                    </div>
+                  ))}
+                  <div className="panel-actions">
+                    <button
+                      className="chip-btn"
+                      onClick={() => navigator.clipboard.writeText(templateMarkdown())}
+                    >
+                      <IconCopy size={15} /> Copy
+                    </button>
+                    <button
+                      className="chip-btn"
+                      onClick={() =>
+                        download(`${data.videoId}-${templateId}.md`, templateMarkdown(), "text/markdown")
+                      }
+                    >
+                      <IconDownload size={15} /> Export .md
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {tab === "insights" && (
