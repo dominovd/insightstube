@@ -90,6 +90,20 @@ h1 .grad{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit
 .demo-sub{font-size:12.5px;color:var(--ink-3)}
 .demo-player{position:relative;width:100%;aspect-ratio:16/9;margin-bottom:16px;border-radius:14px;overflow:hidden;background:#000;box-shadow:var(--shadow-sm)}
 .demo-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* active (currently-spoken) transcript line */
+.tr-row.active-seg{background:var(--accent-soft);border-radius:8px;box-shadow:inset 3px 0 0 var(--accent)}
+.tr-row.active-seg .tr-text{color:var(--ink)}
+
+/* two-column layout on wide screens: sticky player left, transcript right */
+@media(min-width:980px){
+  .demo-2col{max-width:1160px;display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);align-items:start}
+  .demo-left{position:sticky;top:80px;align-self:start;padding:18px;border-right:1px solid var(--line)}
+  .demo-left .demo-player{margin-bottom:14px}
+  .demo-left .demo-head{padding:0;border:0;background:none}
+  .demo-right{min-width:0}
+  .demo-2col .tr-scroll{max-height:58vh}
+}
 .tabs{display:flex;gap:4px;padding:12px 22px 0;border-bottom:1px solid var(--line)}
 .tab{font-size:13.5px;font-weight:600;color:var(--ink-3);padding:9px 16px;border-radius:9px 9px 0 0;cursor:pointer;border:0;background:none;border-bottom:2px solid transparent;transition:.15s}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--accent-soft)}

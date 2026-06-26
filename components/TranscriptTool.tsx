@@ -51,6 +51,26 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Load the YouTube IFrame Player API once (used for current-time tracking).
+let ytApiPromise: Promise<void> | null = null;
+function loadYouTubeAPI(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  const w = window as unknown as { YT?: { Player?: unknown }; onYouTubeIframeAPIReady?: () => void };
+  if (w.YT?.Player) return Promise.resolve();
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise<void>((resolve) => {
+    const prev = w.onYouTubeIframeAPIReady;
+    w.onYouTubeIframeAPIReady = () => {
+      prev?.();
+      resolve();
+    };
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  });
+  return ytApiPromise;
+}
+
 interface Segment {
   start: number;
   dur: number;
@@ -199,18 +219,95 @@ export default function TranscriptTool({
   const [matchIndex, setMatchIndex] = useState(0);
   const activeMatchRef = useRef<HTMLElement | null>(null);
 
-  // Embedded YouTube player: seek to a moment without leaving the site.
+  const shown = showTranslated && translated ? translated : data?.segments ?? [];
+
+  // Embedded YouTube player: seek to a moment and follow along (active line).
   const playerRef = useRef<HTMLIFrameElement | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ytPlayerRef = useRef<any>(null);
+  const segStartsRef = useRef<number[]>([]);
+  const activeRowRef = useRef<HTMLDivElement | null>(null);
+  const [activeSeg, setActiveSeg] = useState(-1);
+
   function seekTo(seconds: number) {
-    const win = playerRef.current?.contentWindow;
-    if (!win) return;
     const t = Math.max(0, Math.floor(seconds));
-    win.postMessage(JSON.stringify({ event: "command", func: "seekTo", args: [t, true] }), "*");
-    win.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+    const p = ytPlayerRef.current;
+    if (p?.seekTo) {
+      p.seekTo(t, true);
+      p.playVideo?.();
+    } else {
+      const win = playerRef.current?.contentWindow;
+      win?.postMessage(JSON.stringify({ event: "command", func: "seekTo", args: [t, true] }), "*");
+      win?.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+    }
     playerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
-  const shown = showTranslated && translated ? translated : data?.segments ?? [];
+  // Keep the list of segment start times in a ref for fast active-line lookup.
+  useEffect(() => {
+    segStartsRef.current = shown.map((s) => s.start);
+  }, [shown]);
+
+  // Initialize the IFrame API player for the current video and poll its time to
+  // highlight the line being spoken.
+  useEffect(() => {
+    if (!data?.videoId) return;
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | undefined;
+
+    const updateActive = () => {
+      const p = ytPlayerRef.current;
+      if (!p?.getCurrentTime) return;
+      const t = p.getCurrentTime();
+      const starts = segStartsRef.current;
+      let lo = 0;
+      let hi = starts.length - 1;
+      let idx = -1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (starts[mid] <= t) {
+          idx = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      setActiveSeg((prev) => (prev === idx ? prev : idx));
+    };
+
+    loadYouTubeAPI().then(() => {
+      if (cancelled || !playerRef.current) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = window as any;
+      ytPlayerRef.current = new w.YT.Player(playerRef.current, {
+        events: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onStateChange: (e: any) => {
+            clearInterval(interval);
+            if (e.data === 1) interval = setInterval(updateActive, 250); // 1 = playing
+          },
+        },
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      try {
+        ytPlayerRef.current?.destroy?.();
+      } catch {
+        /* ignore */
+      }
+      ytPlayerRef.current = null;
+    };
+  }, [data?.videoId]);
+
+  // Follow the active line while playing (only on the transcript tab).
+  useEffect(() => {
+    if (tab === "transcript" && activeSeg >= 0) {
+      activeRowRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [activeSeg, tab]);
 
   const matchCount = useMemo(() => {
     const q = query.trim();
@@ -275,6 +372,7 @@ export default function TranscriptTool({
     setTranslateError("");
     setTranslateTruncated(false);
     setQuery("");
+    setActiveSeg(-1);
     setTab("transcript");
     try {
       // Examples are pre-cached as static JSON: serve them without an API call
@@ -466,10 +564,12 @@ export default function TranscriptTool({
       {error && <div className="err-box">{error}</div>}
 
       {data && (
-        <div className="demo">
+        <div className="demo demo-2col">
+          <div className="demo-left">
           <div className="demo-player">
             <iframe
               key={data.videoId}
+              id={`yt-${data.videoId}`}
               ref={playerRef}
               src={`https://www.youtube-nocookie.com/embed/${data.videoId}?enablejsapi=1&playsinline=1&rel=0`}
               title={data.title}
@@ -486,7 +586,9 @@ export default function TranscriptTool({
               </div>
             </div>
           </div>
+          </div>{/* demo-left */}
 
+          <div className="demo-right">
           <div className="tabs">
             <button
               className={`tab ${tab === "transcript" ? "active" : ""}`}
@@ -600,7 +702,11 @@ export default function TranscriptTool({
                 {(() => {
                   const counter = { n: 0 };
                   return shown.map((s, i) => (
-                    <div className="tr-row" key={i}>
+                    <div
+                      className={`tr-row ${i === activeSeg ? "active-seg" : ""}`}
+                      key={i}
+                      ref={i === activeSeg ? activeRowRef : undefined}
+                    >
                       {showTs && (
                         <button
                           type="button"
@@ -755,6 +861,7 @@ export default function TranscriptTool({
               </form>
             </div>
           )}
+          </div>{/* demo-right */}
         </div>
       )}
     </>
