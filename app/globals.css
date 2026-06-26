@@ -173,6 +173,16 @@ mark.hl.active{background:#f59e0b;color:#fff}
 .note-del{flex-shrink:0;border:0;background:none;color:var(--ink-3);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
 .note-del:hover{color:var(--red)}
 
+/* insights panel: chapters + mentions */
+.ins-block h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);margin-bottom:10px}
+.ins-chapters{display:flex;flex-direction:column;gap:6px}
+.ins-chapter{display:flex;gap:10px;align-items:baseline;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 12px;cursor:pointer;font:inherit;color:var(--ink-2);transition:.15s}
+.ins-chapter:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.ins-mgroup{margin-top:12px}
+.ins-mlabel{font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:6px}
+.ins-mlist{display:flex;flex-wrap:wrap;gap:8px}
+.ins-mention{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink-2);background:#f4f7fb;border:1px solid var(--line);border-radius:8px;padding:5px 10px}
+
 /* example question chips */
 .q-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:34px;max-width:760px;margin-inline:auto}
 .q-chip{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:9px 18px;font-size:13.5px;font-weight:600;color:var(--ink-2);box-shadow:var(--shadow-sm)}

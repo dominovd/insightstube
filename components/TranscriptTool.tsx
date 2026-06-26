@@ -99,6 +99,20 @@ interface ChatMessage {
   content: string;
 }
 
+interface InsightsData {
+  chapters: { time: string; title: string }[];
+  mentions: { type: string; name: string; time?: string }[];
+}
+
+const MENTION_GROUPS: { type: string; label: string }[] = [
+  { type: "person", label: "People" },
+  { type: "book", label: "Books" },
+  { type: "tool", label: "Tools & products" },
+  { type: "company", label: "Companies" },
+  { type: "place", label: "Places" },
+  { type: "other", label: "Other" },
+];
+
 interface Note {
   id: string;
   start: number;
@@ -202,9 +216,9 @@ export default function TranscriptTool({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<TranscriptData | null>(null);
-  const [tab, setTab] = useState<"transcript" | "summary" | "takeaways" | "chat" | "notes">(
-    "transcript"
-  );
+  const [tab, setTab] = useState<
+    "transcript" | "summary" | "takeaways" | "chat" | "notes" | "insights"
+  >("transcript");
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -214,6 +228,11 @@ export default function TranscriptTool({
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [sumLoading, setSumLoading] = useState(false);
   const [sumError, setSumError] = useState("");
+
+  // Insights (auto-chapters + mentions)
+  const [insights, setInsights] = useState<InsightsData | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState("");
 
   // Translation
   const [translateLang, setTranslateLang] = useState("Russian");
@@ -426,6 +445,8 @@ export default function TranscriptTool({
     setData(null);
     setSummary(null);
     setSumError("");
+    setInsights(null);
+    setInsightsError("");
     setChat([]);
     setChatError("");
     setTranslated(null);
@@ -490,6 +511,27 @@ export default function TranscriptTool({
     }
   }
 
+  async function getInsights() {
+    if (!data || insightsLoading || insights) return;
+    setInsightsLoading(true);
+    setInsightsError("");
+    try {
+      const text = data.segments.map((s) => `[${fmtTime(s.start)}] ${s.text}`).join("\n");
+      const res = await fetch("/api/insights", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: data.title, transcript: text }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Could not extract insights.");
+      setInsights(json);
+    } catch (e) {
+      setInsightsError(e instanceof Error ? e.message : "Could not extract insights.");
+    } finally {
+      setInsightsLoading(false);
+    }
+  }
+
   async function translate() {
     if (!data || translating) return;
     setTranslating(true);
@@ -549,6 +591,7 @@ export default function TranscriptTool({
   function selectTab(t: typeof tab) {
     setTab(t);
     if (t === "summary" || t === "takeaways") getSummary();
+    if (t === "insights") getInsights();
   }
 
   async function sendChat(e: React.FormEvent) {
@@ -668,6 +711,12 @@ export default function TranscriptTool({
               onClick={() => selectTab("takeaways")}
             >
               Key Takeaways
+            </button>
+            <button
+              className={`tab ${tab === "insights" ? "active" : ""}`}
+              onClick={() => selectTab("insights")}
+            >
+              Insights
             </button>
             <button
               className={`tab ${tab === "chat" ? "active" : ""}`}
@@ -935,6 +984,74 @@ export default function TranscriptTool({
                   Send
                 </button>
               </form>
+            </div>
+          )}
+          {tab === "insights" && (
+            <div className="panel">
+              {insightsLoading && (
+                <div className="panel-empty">
+                  <IconLoader size={22} /> <br />
+                  Finding chapters and mentions…
+                </div>
+              )}
+              {insightsError && <div className="err-box">{insightsError}</div>}
+              {insights && (
+                <div className="ins-block">
+                  {insights.chapters.length > 0 && (
+                    <>
+                      <h4>Chapters</h4>
+                      <div className="ins-chapters">
+                        {insights.chapters.map((c, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className="ins-chapter"
+                            onClick={() => seekTo(tsToSeconds(c.time))}
+                          >
+                            <span className="ts">{c.time}</span>
+                            <span>{c.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {insights.mentions.length > 0 && (
+                    <>
+                      <h4 style={{ marginTop: 18 }}>Mentions &amp; resources</h4>
+                      {MENTION_GROUPS.map((g) => {
+                        const items = insights.mentions.filter((m) => m.type === g.type);
+                        if (!items.length) return null;
+                        return (
+                          <div className="ins-mgroup" key={g.type}>
+                            <div className="ins-mlabel">{g.label}</div>
+                            <div className="ins-mlist">
+                              {items.map((m, i) => (
+                                <span className="ins-mention" key={i}>
+                                  {m.name}
+                                  {m.time && (
+                                    <button
+                                      type="button"
+                                      className="ts"
+                                      onClick={() => seekTo(tsToSeconds(m.time!))}
+                                    >
+                                      {m.time}
+                                    </button>
+                                  )}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {insights.chapters.length === 0 && insights.mentions.length === 0 && (
+                    <div className="panel-empty">No chapters or mentions found for this video.</div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {tab === "notes" && (
