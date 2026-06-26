@@ -36,7 +36,7 @@ const TEMPLATES: Record<string, { name: string; instructions: string }> = {
 };
 
 export async function POST(req: NextRequest) {
-  const limit = rateLimit(`tpl:${clientIp(req)}`, { perMinute: 2, perDay: 3 });
+  const limit = await rateLimit(`tpl:${clientIp(req)}`, { perMinute: 2, perDay: 3 });
   if (!limit.ok) {
     return NextResponse.json({ error: limit.reason }, { status: 429 });
   }

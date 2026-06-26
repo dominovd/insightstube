@@ -7,7 +7,7 @@ export const maxDuration = 60;
 const MAX_TRANSCRIPT_CHARS = 60_000;
 
 export async function POST(req: NextRequest) {
-  const limit = rateLimit(`sum:${clientIp(req)}`, { perMinute: 2, perDay: 3 });
+  const limit = await rateLimit(`sum:${clientIp(req)}`, { perMinute: 2, perDay: 3 });
   if (!limit.ok) {
     return NextResponse.json({ error: limit.reason }, { status: 429 });
   }
