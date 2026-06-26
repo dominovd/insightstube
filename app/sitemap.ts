@@ -1,10 +1,18 @@
 import type { MetadataRoute } from "next";
+import { topics } from "@/lib/topics";
 
 const BASE = "https://insightstube.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
+  const topicPages: MetadataRoute.Sitemap = Object.keys(topics).map((slug) => ({
+    url: `${BASE}/best/${slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.8,
+  }));
   return [
+    ...topicPages,
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     {
       url: `${BASE}/chat-with-youtube-transcript`,

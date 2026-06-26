@@ -36,6 +36,12 @@ export default function SiteFooter() {
             <Link href="/guides">All guides</Link>
           </div>
           <div>
+            <h4>Best channels</h4>
+            <Link href="/best/youtube-channels-for-startup-business-advice">
+              Startup business advice
+            </Link>
+          </div>
+          <div>
             <h4>Site</h4>
             <Link href="/about">About</Link>
             <Link href="/contact">Contact</Link>

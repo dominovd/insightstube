@@ -572,9 +572,8 @@ export default function TranscriptTool({
     });
   }
 
-  async function getTranscript(e: React.FormEvent) {
-    e.preventDefault();
-    if (!url.trim() || loading) return;
+  async function runTranscript(targetUrl: string) {
+    if (!targetUrl.trim() || loading) return;
     setLoading(true);
     setError("");
     setData(null);
@@ -597,7 +596,7 @@ export default function TranscriptTool({
       // Examples are pre-cached as static JSON: serve them without an API call
       // (saves a transcript request and loads instantly). Falls back to the API
       // if the cache file isn't there yet.
-      const id = clientVideoId(url);
+      const id = clientVideoId(targetUrl);
       if (id && EXAMPLE_IDS.has(id)) {
         try {
           const cached = await fetch(`/examples/${id}.json`);
@@ -614,7 +613,7 @@ export default function TranscriptTool({
       const res = await fetch("/api/transcript", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: targetUrl }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
@@ -626,6 +625,25 @@ export default function TranscriptTool({
       setLoading(false);
     }
   }
+
+  async function getTranscript(e: React.FormEvent) {
+    e.preventDefault();
+    await runTranscript(url);
+  }
+
+  // Auto-load a video passed via ?url= or ?v= (used by landing-page deep links).
+  const autoloadedRef = useRef(false);
+  useEffect(() => {
+    if (autoloadedRef.current) return;
+    autoloadedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const u = params.get("url") || params.get("v");
+    if (u) {
+      setUrl(u);
+      runTranscript(u);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function getSummary() {
     if (!data || sumLoading || summary) return;
