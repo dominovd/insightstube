@@ -242,18 +242,18 @@ mark.hl.active{background:#f59e0b;color:#fff}
 .ch-video-body{min-width:0;display:flex;flex-direction:column;gap:3px}
 .ch-video-title{font-size:14px;font-weight:600;color:var(--ink);line-height:1.35}
 .ch-video-date{font-size:12px;color:var(--ink-3)}
-.ch-video-cta{margin-top:auto;font-size:13px;font-weight:600;color:var(--accent)}
+.ch-video-cta{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin-top:4px;background:none;border:0;padding:0;font:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer}
 .ch-video-cta:hover{text-decoration:underline}
 .topic-method,.topic-faq{margin-top:40px}
 .topic-method h2,.topic-faq h2{font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:14px}
 .topic-method p{color:var(--ink-2);max-width:720px}
-.topic-faq-item{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:10px;overflow:hidden}
-.topic-faq-item summary{font-size:15.5px;font-weight:600;color:var(--ink);padding:14px 18px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.topic-faq-item{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+.topic-faq-item summary{font-size:14.5px;font-weight:600;color:var(--ink);padding:11px 16px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .topic-faq-item summary::-webkit-details-marker{display:none}
-.topic-faq-item summary::after{content:"+";font-size:20px;font-weight:400;color:var(--ink-3);flex-shrink:0}
+.topic-faq-item summary::after{content:"+";font-size:18px;font-weight:400;color:var(--ink-3);flex-shrink:0;line-height:1}
 .topic-faq-item[open] summary::after{content:"−"}
 .topic-faq-item summary:hover{color:var(--accent)}
-.topic-faq-item p{color:var(--ink-2);max-width:720px;padding:0 18px 16px}
+.topic-faq-item p{color:var(--ink-2);max-width:720px;padding:0 16px 13px;font-size:14px}
 @media(min-width:720px){
   .ch-card{display:grid;grid-template-columns:1fr 1fr}
   .ch-videos{border-top:0;border-left:1px solid var(--line)}
